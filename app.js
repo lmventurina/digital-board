@@ -1,15 +1,7 @@
+// --- Imports ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, setDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-// Inject YouTube IFrame API
-let ytApiReady = false;
-window.onYouTubeIframeAPIReady = () => { ytApiReady = true; };
-const tag = document.createElement('script');
-tag.src = "https://www.youtube.com/iframe_api";
-const firstScriptTag = document.getElementsByTagName('script')[0];
-firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+import { getFirestore, collection, doc, onSnapshot, updateDoc, addDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
 // --- Configuration ---
 const firebaseConfig = {
@@ -23,664 +15,588 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-let analytics;
-try { analytics = getAnalytics(app); } catch (e) { console.warn("Analytics skipped", e); }
-
-const auth = getAuth(app);
 const db = getFirestore(app);
-const appId = 'navajo-pine-hs-v1'; 
+const auth = getAuth(app);
 
-let currentUser = null;
-let appData = { announcements: [], students: [], teachers: [], events: [], externalEvents: [], ticker: "", settings: {}, media: [] };
+// Data Root Path
+const APP_ID = "digital-bulletin-board-6c660"; // Matching your Project ID for clarity
+const DATA_ROOT = `artifacts/${APP_ID}/public/data`;
 
-const DEPARTMENTS = ["General", "Admin", "History", "Navajo Language", "Math", "ELA", "Science", "Tech", "Special Ed", "PE", "Health", "Welding", "Sports", "Music", "Art"];
-const COLLECTIONS = { ANNOUNCEMENTS: 'announcements', STUDENTS: 'students', TEACHERS: 'teachers', EVENTS: 'events', TICKER: 'ticker', SETTINGS: 'settings', MEDIA: 'media' };
-
-const els = {
-    schoolName: document.getElementById('header-school-name'),
-    schoolSubtitle: document.getElementById('header-subtitle'),
-    schoolSubtitle2: document.getElementById('header-subtitle-2'),
-    liveTime: document.getElementById('live-time'),
-    liveDate: document.getElementById('live-date'),
-    ticker: document.getElementById('ticker-content'),
-    studentCarousel: document.getElementById('student-carousel'),
-    studentProgress: document.getElementById('student-progress'),
-    teacherCarousel: document.getElementById('teacher-carousel'),
-    teacherProgress: document.getElementById('teacher-progress'),
-    announcementCarousel: document.getElementById('announcement-carousel'),
-    announcementProgress: document.getElementById('announcement-progress'),
-    mediaCarousel: document.getElementById('media-carousel'),
-    mediaProgress: document.getElementById('media-progress'),
-    eventsList: document.getElementById('events-list'),
-    weatherCity: document.getElementById('weather-city'),
-    weatherIcon: document.getElementById('weather-current-icon'),
-    weatherTemp: document.getElementById('weather-current-temp'),
-    weatherForecast: document.getElementById('weather-forecast'),
-    adminAnnouncements: document.getElementById('admin-announcements-list'),
-    adminStudents: document.getElementById('admin-students-list'),
-    adminTeachers: document.getElementById('admin-teachers-list'),
-    adminEvents: document.getElementById('admin-events-list'),
-    adminTicker: document.getElementById('admin-ticker-list'),
-    adminMedia: document.getElementById('admin-media-list'),
-    confName: document.getElementById('conf-name'),
-    confSubtitle: document.getElementById('conf-subtitle'),
-    confSubtitle2: document.getElementById('conf-subtitle-2'),
-    confLocation: document.getElementById('conf-location'),
-    confCalendar: document.getElementById('conf-calendar')
+// --- State Management ---
+const carousels = {
+    students: { id: 'student-carousel', interval: null, duration: 10000, data: [] },
+    teachers: { id: 'teacher-carousel', interval: null, duration: 12000, data: [] },
+    announcements: { id: 'announcement-carousel', interval: null, duration: 10000, data: [] },
+    media: { id: 'media-carousel', interval: null, duration: 10000, data: [], currentIndex: 0, isVideoPlaying: false }
 };
 
-// --- Authentication & Initialization ---
-async function initAuth() {
-    if (!auth.currentUser) {
-        try {
-            await signInAnonymously(auth); 
-        } catch (e) {
-            // Silently fail if anonymous auth is disabled; user is just a guest
-            console.log("Guest login not enabled. Viewing as public.");
-        }
-    }
-}
-initAuth();
+let player; // YouTube Player Instance
 
-onAuthStateChanged(auth, (user) => {
-    currentUser = user;
-    if (user && !user.isAnonymous) {
-        console.log("Admin Logged In:", user.email);
-    }
+// --- Initialization ---
+document.addEventListener('DOMContentLoaded', () => {
+    updateClock();
+    setInterval(updateClock, 1000);
     setupListeners();
+    loadYouTubeAPI();
+    
+    // Check for Auth to determine button behavior
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            console.log("Admin logged in:", user.email);
+        }
+    });
 });
 
-startClock();
-
-// --- Auth Functions (Attached to Window) ---
-window.handleAdminClick = () => {
-    if (currentUser && !currentUser.isAnonymous) {
-        document.getElementById('admin-modal').classList.remove('hidden');
-    } else {
-        document.getElementById('login-modal').classList.remove('hidden');
-    }
-};
-
-window.handleLogin = async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    const errorMsg = document.getElementById('login-error');
-    
-    errorMsg.innerText = "Signing in...";
-    errorMsg.classList.remove('hidden');
-    
-    try {
-        await signInWithEmailAndPassword(auth, email, password);
-        document.getElementById('login-modal').classList.add('hidden');
-        document.getElementById('admin-modal').classList.remove('hidden');
-        document.getElementById('login-form').reset();
-        errorMsg.classList.add('hidden');
-    } catch (error) {
-        console.error(error);
-        errorMsg.innerText = "Login failed: " + error.message;
-    }
-};
-
-window.handleLogout = async () => {
-    try {
-        await signOut(auth);
-        document.getElementById('admin-modal').classList.add('hidden');
-        initAuth();
-        alert("Logged out successfully.");
-    } catch (error) {
-        console.error(error);
-    }
-};
-
-// --- Firebase Listeners ---
-function getCollectionRef(colName) {
-    return collection(db, 'artifacts', appId, 'public', 'data', colName);
+// --- YouTube API Logic ---
+function loadYouTubeAPI() {
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 }
+
+// Global callback for YouTube API
+window.onYouTubeIframeAPIReady = function() {
+    console.log("YouTube API Ready");
+};
+
+// --- Core Logic: Rendering & Data ---
 
 function setupListeners() {
-    if(window.listenersActive) return;
-    window.listenersActive = true;
-
-    const listen = (colName, callback) => {
-        onSnapshot(getCollectionRef(colName), (snapshot) => {
-            const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            callback(data);
-        }, (error) => console.error(`Error listening to ${colName}:`, error));
-    };
-
-    listen(COLLECTIONS.ANNOUNCEMENTS, (data) => {
-        appData.announcements = data;
-        renderCarousel('announcement', data);
-        renderAdminList('announcements', data);
-    });
-
-    listen(COLLECTIONS.STUDENTS, (data) => {
-        appData.students = data;
-        renderCarousel('student', data);
-        renderAdminList('students', data);
-    });
-
-    listen(COLLECTIONS.TEACHERS, (data) => {
-        appData.teachers = data;
-        renderCarousel('teacher', data);
-        renderAdminList('teachers', data);
-    });
-
-    listen(COLLECTIONS.EVENTS, (data) => {
-        appData.events = data;
-        mergeAndRenderEvents();
-        renderAdminList('events', data);
-    });
-
-    listen(COLLECTIONS.TICKER, (data) => {
-        if (data.length > 0) {
-            appData.ticker = data;
-            const combinedText = data.map(item => item.text).join(' &nbsp; <span class="text-school-navy/50 mx-2">●</span> &nbsp; ');
-            els.ticker.innerHTML = combinedText;
+    // 1. Settings (Header, Config)
+    onSnapshot(doc(db, `${DATA_ROOT}/settings`), (doc) => {
+        if (doc.exists()) {
+            const data = doc.data();
+            document.getElementById('school-name').textContent = data.schoolName || "Welcome";
+            document.getElementById('sub-1').textContent = data.subtitle || "Loading Info...";
+            document.getElementById('sub-2').textContent = data.subtitle2 || "Home of the Tech Warriors (Tó éí Tech Naalʼánígíí Kéyah)";
+            
+            // Only update logo if a URL is actually present
+            if (data.logo && data.logo.length > 10) {
+                document.getElementById('school-logo').src = data.logo;
+            }
+            
+            if (data.location) fetchWeather(data.location);
         } else {
-             els.ticker.innerHTML = "Welcome to School Board";
-        }
-        renderAdminList('ticker', data);
-    });
-
-    listen(COLLECTIONS.SETTINGS, (data) => {
-        if (data.length > 0) {
-            appData.settings = data[0];
-            appData.settingsId = data[0].id;
-            updateUIConfig(data[0]);
+            // Create default settings if they don't exist yet
+            console.log("Initializing Settings...");
         }
     });
 
-    listen(COLLECTIONS.MEDIA, (data) => {
-        appData.media = data;
-        renderCarousel('media', data);
-        renderAdminList('media', data);
+    // 2. Ticker
+    onSnapshot(doc(db, `${DATA_ROOT}/ticker`), (doc) => {
+        if (doc.exists()) {
+            const span = document.querySelector('#ticker-content span');
+            span.textContent = doc.data().text || "Welcome to our digital bulletin board!";
+        }
+    });
+
+    // 3. Events (Firestore)
+    onSnapshot(collection(db, `${DATA_ROOT}/events`), (snapshot) => {
+        const container = document.getElementById('events-list');
+        container.innerHTML = '';
+        
+        let events = [];
+        snapshot.forEach(doc => events.push({ ...doc.data(), id: doc.id }));
+        
+        // Sort by datetime
+        events.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+
+        events.forEach(event => {
+            const dateObj = new Date(event.datetime);
+            const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const timeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            
+            const el = document.createElement('div');
+            el.className = "p-3 border-l-4 border-gold bg-white shadow-sm rounded-r-lg hover:bg-gray-50 transition";
+            el.innerHTML = `
+                <div class="text-navy font-bold text-sm">${dateStr} <span class="text-gray-400 font-normal">| ${timeStr}</span></div>
+                <div class="font-semibold text-gray-800">${event.title}</div>
+                <div class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-location-dot"></i> ${event.location || 'Campus'}</div>
+            `;
+            container.appendChild(el);
+        });
+    });
+
+    // 4. Carousels
+    setupCarousel('students', renderGenericCard);
+    setupCarousel('teachers', renderGenericCard);
+    setupCarousel('announcements', renderGenericCard);
+
+    // 5. Media Feed
+    onSnapshot(collection(db, `${DATA_ROOT}/media`), (snapshot) => {
+        const items = [];
+        snapshot.forEach(doc => items.push({ ...doc.data(), id: doc.id }));
+        carousels.media.data = items;
+        renderMediaFeed();
     });
 }
 
-// --- Core Logic ---
-function updateUIConfig(settings) {
-    if(settings.schoolName) els.schoolName.innerHTML = settings.schoolName;
-    if(settings.subtitle) els.schoolSubtitle.innerHTML = settings.subtitle;
-    if(settings.subtitle2) els.schoolSubtitle2.innerHTML = settings.subtitle2;
-    if(settings.logo) {
-        document.getElementById('header-logo').src = settings.logo;
-    }
-    els.confName.value = settings.schoolName || "";
-    els.confSubtitle.value = settings.subtitle || "";
-    els.confSubtitle2.value = settings.subtitle2 || "";
-    els.confLocation.value = settings.location || "";
-    els.confCalendar.value = settings.googleCalendar || "";
-    fetchWeather(settings.location);
-    fetchCalendar(settings.googleCalendar);
-}
-
-// Carousel Logic
-const carousels = {
-    student: { index: 0, timer: null, interval: 8000 },
-    teacher: { index: 0, timer: null, interval: 10000 },
-    announcement: { index: 0, timer: null, interval: 12000 },
-    media: { index: 0, timer: null, interval: 15000 }
+// 4. Standard Carousels (Students, Teachers, Announcements)
+const setupCarousel = (key, renderFunc) => {
+    onSnapshot(collection(db, `${DATA_ROOT}/${key}`), (snapshot) => {
+        const items = [];
+        snapshot.forEach(doc => items.push({ ...doc.data(), id: doc.id }));
+        carousels[key].data = items;
+        renderFunc(carousels[key].id, items, key);
+        startCarouselRotation(key);
+    });
 };
 
-function extractYouTubeID(url) {
-    let videoId = '';
-    try {
-        const u = new URL(url);
-        if (u.hostname.includes('youtube.com')) {
-            if (u.searchParams.has('v')) videoId = u.searchParams.get('v');
-            else if (u.pathname.includes('/shorts/')) videoId = u.pathname.split('/shorts/')[1];
-            else if (u.pathname.includes('/embed/')) videoId = u.pathname.split('/embed/')[1];
-        } else if (u.hostname.includes('youtu.be')) {
-            videoId = u.pathname.slice(1);
-        }
-    } catch(e) {}
-    return videoId ? videoId.split('?')[0].split('&')[0] : null;
-}
-
-function renderCarousel(type, data) {
-    const container = els[`${type}Carousel`];
-    const progressBar = els[`${type}Progress`];
-    const config = carousels[type];
-
-    if (config.timer) { clearTimeout(config.timer); clearInterval(config.timer); }
-    if (type === 'media' && window.currentMediaPlayer) { try { window.currentMediaPlayer.destroy(); } catch(e){} window.currentMediaPlayer = null; }
-
-    if (!data || data.length === 0) {
-        container.innerHTML = `<div class="w-full h-full flex items-center justify-center text-center text-gray-400">No content available</div>`;
+// Render Functions
+function renderGenericCard(containerId, items, type) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    
+    if (items.length === 0) {
+        container.innerHTML = `<div class="flex items-center justify-center h-full text-gray-400">No ${type} added</div>`;
         return;
     }
-    if (config.index >= data.length) config.index = 0;
-
-    const showSlide = () => {
-        if (progressBar) { progressBar.style.transition = 'none'; progressBar.style.width = '0%'; }
-        const item = data[config.index];
-        container.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center opacity-0 transition-opacity duration-500 relative" id="${type}-slide-content"></div>`;
-        const slide = document.getElementById(`${type}-slide-content`);
+    
+    items.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = `slide ${index === 0 ? 'active' : ''}`;
         
-        const queueNext = (delay) => {
-            if (progressBar) { setTimeout(() => { progressBar.style.transition = `width ${delay}ms linear`; progressBar.style.width = '100%'; }, 50); }
-            config.timer = setTimeout(() => { config.index = (config.index + 1) % data.length; showSlide(); }, delay);
-        };
+        // Background Image logic
+        let bg = '';
+        let hasBg = false;
+        // Use placeholder if image is missing but required
+        if (item.image && item.image.length > 5) {
+            bg = `<img src="${item.image}" class="slide-bg-image" alt="bg">`;
+            hasBg = true;
+        }
 
-        if (type === 'media' && item.type === 'youtube') {
-            slide.classList.remove('opacity-0'); 
-            let videoId = extractYouTubeID(item.content);
-            if (videoId && ytApiReady) {
-                const playerId = `yt-player-${Date.now()}`;
-                slide.innerHTML = `<div id="${playerId}" style="width:100%; height:100%;"></div>`;
-                
-                // Safe origin check to avoid protocol errors
-                const origin = window.location.protocol.startsWith('http') ? window.location.origin : undefined;
-
-                window.currentMediaPlayer = new YT.Player(playerId, {
-                    height: '100%', width: '100%', videoId: videoId,
-                    playerVars: { 
-                        'autoplay': 1, 
-                        'controls': 0, 
-                        'rel': 0, 
-                        'showinfo': 0, 
-                        'modestbranding': 1, 
-                        'mute': 0, 
-                        'origin': origin, // Only send origin if HTTP/HTTPS
-                        'enablejsapi': 1 
-                    },
-                    events: {
-                        'onReady': (event) => { event.target.playVideo(); },
-                        'onStateChange': (event) => { if (event.data === 0) { config.index = (config.index + 1) % data.length; showSlide(); } },
-                        'onError': (e) => { 
-                            // Suppress console spam for restricted videos
-                            console.warn("Skipping restricted/unavailable video."); 
-                            slide.innerHTML = `<div class="flex items-center justify-center h-full text-white bg-black"><p>Video Unavailable</p></div>`; 
-                            queueNext(3000); 
-                        }
-                    }
-                });
-                config.timer = setTimeout(() => { config.index = (config.index + 1) % data.length; showSlide(); }, 600000); 
-            } else {
-                slide.innerHTML = `<p class="text-red-500">Video Loading...</p>`;
-                if (!ytApiReady) setTimeout(showSlide, 1000); else queueNext(5000);
-            }
-        } else if (type === 'media' && item.type === 'facebook') {
-            slide.innerHTML = item.content.includes('<iframe') ? item.content : `<div class="flex items-center justify-center h-full text-red-500 font-bold">Invalid Embed Code</div>`;
-            const fbFrame = slide.querySelector('iframe');
-            if (fbFrame) { fbFrame.style.width = '100%'; fbFrame.style.height = '100%'; }
-            setTimeout(() => slide.classList.remove('opacity-0'), 50);
-            queueNext(config.interval);
-        } else {
-            // Standard content
-            if (type === 'media' && item.type === 'image') {
-                 slide.innerHTML = `<img src="${item.content}" class="w-full h-full object-cover">`;
-            } else if (type === 'student') {
-                slide.innerHTML = `
-                    <div class="relative w-32 h-32 md:w-48 md:h-48 rounded-full border-4 border-school-gold overflow-hidden shadow-lg mb-4">
-                        <img src="${item.image || 'https://placehold.co/200?text=Student'}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200?text=No+Img'">
+        let content = '';
+        if (type === 'students') {
+            content = `
+                <div class="slide-content z-10 ${hasBg ? 'slide-text-overlay' : ''}">
+                    <h3 class="text-3xl font-bold mb-2 text-navy ${hasBg ? 'text-white drop-shadow-md' : ''}">${item.name}</h3>
+                    <p class="text-gold font-bold uppercase tracking-widest text-lg mb-4 bg-navy px-3 py-1 inline-block rounded-full shadow">${item.focus || 'Student'}</p>
+                    <p class="text-base line-clamp-4 ${hasBg ? 'text-white' : 'text-gray-600'}">${item.description || ''}</p>
+                </div>`;
+        } else if (type === 'teachers') {
+            content = `
+                <div class="slide-content z-10">
+                    <div class="w-32 h-32 rounded-full border-4 border-gold overflow-hidden mb-4 mx-auto shadow-lg">
+                        <img src="${item.image || 'https://placehold.co/150x150?text=Staff'}" class="w-full h-full object-cover">
                     </div>
-                    <h3 class="text-2xl font-bold text-school-navy mb-1">${item.name}</h3>
-                    <span class="bg-school-gold text-school-navy px-3 py-1 rounded-full text-sm font-bold mb-3">${item.focus || 'Student'}</span>
-                    <p class="text-center text-gray-600 italic line-clamp-3 px-4">"${item.description}"</p>
-                `;
-            } else if (type === 'teacher') {
-                slide.innerHTML = `
-                    <div class="flex flex-row items-center space-x-6 w-full px-4">
-                        <div class="w-1/3 flex justify-end">
-                            <div class="w-32 h-32 rounded-full border-4 border-school-navy overflow-hidden shadow-lg">
-                                <img src="${item.image || 'https://placehold.co/200?text=Staff'}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200?text=No+Img'">
-                            </div>
-                        </div>
-                        <div class="w-2/3 text-left">
-                            <h3 class="text-2xl font-bold text-gray-800">${item.name}</h3>
-                            <div class="text-school-navy font-bold uppercase tracking-wide text-sm mb-2">${item.dept}</div>
-                            <p class="text-gray-600 text-sm line-clamp-4 border-l-4 border-school-gold pl-3">${item.bio}</p>
-                        </div>
-                    </div>
-                `;
-            } else if (type === 'announcement') {
-                const isImg = item.image && item.image.length > 50; 
-                slide.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-full w-full">
-                        ${isImg ? 
-                            `<img src="${item.image}" class="max-h-32 rounded-lg shadow-sm mb-4 object-contain">` : 
-                            `<div class="mb-4 text-school-gold"><i class="fas fa-bullhorn fa-3x"></i></div>`
-                        }
-                        <h3 class="text-2xl md:text-3xl font-bold text-center text-school-navy mb-2 leading-tight">${item.title}</h3>
-                        <div class="h-1 w-20 bg-school-gold mb-3"></div>
-                        <p class="text-center text-gray-700 text-lg md:text-xl line-clamp-4 px-6">${item.description}</p>
-                        ${item.urgent ? '<span class="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-bl-lg uppercase animate-pulse">Urgent</span>' : ''}
-                    </div>
-                `;
-            }
-            setTimeout(() => slide.classList.remove('opacity-0'), 50);
-            queueNext(config.interval);
+                    <h3 class="text-2xl font-bold text-navy">${item.name}</h3>
+                    <p class="text-base font-semibold text-gray-600 mb-2">${item.dept || ''}</p>
+                    <p class="text-sm italic text-gray-500 max-w-[80%]">"${item.bio || ''}"</p>
+                </div>`;
+        } else if (type === 'announcements') {
+            // Apply urgent styling
+            if (item.urgent) div.classList.add('bg-red-50');
+            
+            content = `
+                <div class="slide-content z-10">
+                     ${item.urgent ? '<div class="animate-pulse"><i class="fa-solid fa-circle-exclamation text-5xl text-red-600 mb-4"></i></div>' : ''}
+                    <h3 class="text-2xl font-bold text-navy mb-3 uppercase tracking-tight">${item.title}</h3>
+                    <p class="text-lg text-gray-800 leading-relaxed">${item.description}</p>
+                </div>`;
         }
-    };
-    showSlide();
-}
 
-// --- Weather & Calendar ---
-async function fetchWeather(location) {
-     if (!location) return;
-     try {
-        const q = encodeURIComponent(location);
-        let geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1&language=en&format=json`);
-        let geoData = await geoRes.json();
-        if (!geoData.results && location.includes(',')) {
-            const city = location.split(',')[0].trim();
-            geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`);
-            geoData = await geoRes.json();
-        }
-        if (!geoData.results) { els.weatherCity.innerText = "Loc not found"; return; }
-        const { latitude, longitude, name, admin1 } = geoData.results[0];
-        els.weatherCity.innerText = `${name}, ${admin1 || ''}`;
-        const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&temperature_unit=fahrenheit`);
-        const wData = await wRes.json();
-        els.weatherTemp.innerText = Math.round(wData.current.temperature_2m) + "°F";
-        els.weatherIcon.innerHTML = getWeatherIcon(wData.current.weather_code);
-        let forecastHTML = '';
-        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        for(let i=0; i<3; i++) {
-            const date = new Date(wData.daily.time[i]);
-            const dayName = i === 0 ? 'Today' : days[date.getDay()];
-            const max = Math.round(wData.daily.temperature_2m_max[i]);
-            const min = Math.round(wData.daily.temperature_2m_min[i]);
-            const code = wData.daily.weather_code[i];
-            forecastHTML += `<div class="flex flex-col items-center"><span class="font-bold text-gray-200">${dayName}</span><span class="text-lg my-1">${getWeatherIcon(code)}</span><span class="text-xs font-semibold">${max}°/${min}°</span></div>`;
-        }
-        els.weatherForecast.innerHTML = forecastHTML;
-    } catch (e) { console.error("Weather error", e); els.weatherCity.innerText = "Weather Unavailable"; }
-}
-
-function getWeatherIcon(code) {
-    if (code <= 1) return '<i class="fas fa-sun text-yellow-400"></i>';
-    if (code <= 3) return '<i class="fas fa-cloud-sun text-gray-300"></i>';
-    if (code <= 48) return '<i class="fas fa-smog text-gray-400"></i>';
-    if (code <= 67) return '<i class="fas fa-cloud-rain text-blue-400"></i>';
-    if (code <= 77) return '<i class="fas fa-snowflake text-white"></i>';
-    if (code <= 82) return '<i class="fas fa-cloud-showers-heavy text-blue-500"></i>';
-    if (code <= 99) return '<i class="fas fa-bolt text-yellow-500"></i>';
-    return '<i class="fas fa-cloud"></i>';
-}
-
-async function fetchCalendar(url) {
-    if (!url || !url.startsWith('http')) { appData.externalEvents = []; mergeAndRenderEvents(); return; }
-    try {
-        const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
-        if (!res.ok) throw new Error('Proxy error');
-        const icsData = await res.text();
-        appData.externalEvents = parseICS(icsData);
-        mergeAndRenderEvents();
-    } catch (e) {
-        console.warn("Primary calendar proxy failed, trying fallback...", e);
-        try {
-             const res2 = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-             const data2 = await res2.json();
-             if (data2.contents) { appData.externalEvents = parseICS(data2.contents); mergeAndRenderEvents(); }
-        } catch (err2) { console.error("All calendar fetches failed", err2); }
-    }
-}
-
-function parseICS(icsData) {
-    const events = [];
-    const lines = icsData.split(/\r\n|\n|\r/);
-    let inEvent = false;
-    let currentEvent = {};
-    const parseICSDate = (val) => {
-        if(!val) return null;
-        const year = val.substring(0,4);
-        const month = val.substring(4,6);
-        const day = val.substring(6,8);
-        return `${year}-${month}-${day}`;
-    };
-    for (let line of lines) {
-        if (line.startsWith('BEGIN:VEVENT')) { inEvent = true; currentEvent = {}; } 
-        else if (line.startsWith('END:VEVENT')) {
-            inEvent = false;
-            if (currentEvent.start) {
-                const evtDate = new Date(currentEvent.start);
-                const today = new Date();
-                today.setHours(0,0,0,0);
-                if (evtDate >= today) events.push(currentEvent);
-            }
-        } else if (inEvent) {
-            const parts = line.split(':');
-            const key = parts[0].split(';')[0];
-            const val = parts.slice(1).join(':');
-            if (key === 'DTSTART') currentEvent.start = parseICSDate(val);
-            if (key === 'SUMMARY') currentEvent.title = val;
-            if (key === 'LOCATION') currentEvent.location = val.replace(/\\,/g, ',');
-        }
-    }
-    return events;
-}
-
-function mergeAndRenderEvents() {
-    const allEvents = [
-        ...appData.events.map(e => ({ ...e, source: 'manual', dateObj: new Date(e.datetime) })),
-        ...appData.externalEvents.map(e => ({ ...e, source: 'google', dateObj: new Date(e.start), datetime: e.start }))
-    ];
-    allEvents.sort((a, b) => a.dateObj - b.dateObj);
-    const displayEvents = allEvents.slice(0, 10);
-    if (displayEvents.length === 0) { els.eventsList.innerHTML = `<div class="text-center text-gray-500 mt-4">No upcoming events.</div>`; return; }
-    els.eventsList.innerHTML = displayEvents.map(e => {
-        const date = new Date(e.datetime); 
-        const month = date.toLocaleString('default', { month: 'short' });
-        const day = date.getDate();
-        const isGoogle = e.source === 'google';
-        const borderColor = isGoogle ? 'border-green-500' : 'border-school-gold';
-        return `
-        <div class="flex items-center bg-gray-50 p-3 rounded-lg border-l-4 ${borderColor} shadow-sm hover:bg-gray-100 transition-colors">
-            <div class="flex-none w-12 h-12 bg-white rounded-lg border border-gray-200 flex flex-col items-center justify-center mr-3 shadow-sm">
-                <span class="text-xs font-bold text-gray-500 uppercase">${month}</span>
-                <span class="text-xl font-bold text-school-navy leading-none">${day}</span>
-            </div>
-            <div class="flex-grow min-w-0">
-                <h4 class="font-bold text-gray-800 truncate">${e.title}</h4>
-                <p class="text-xs text-gray-500 truncate"><i class="fas fa-map-marker-alt mr-1"></i> ${e.location || 'TBA'} ${isGoogle ? '(Google Cal)' : ''}</p>
-            </div>
-        </div>
-        `;
-    }).join('');
-}
-
-// --- Admin Interface ---
-window.formatText = (identifier, tag) => {
-    let textarea = document.querySelector(`textarea[name="${identifier}"]`);
-    if (!textarea) textarea = document.getElementById(identifier);
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = textarea.value;
-    textarea.value = text.substring(0, start) + `<${tag}>` + text.substring(start, end) + `</${tag}>` + text.substring(end);
-    textarea.focus();
-};
-
-window.toggleAdminModal = () => { document.getElementById('admin-modal').classList.toggle('hidden'); };
-
-window.switchTab = (tabId) => {
-    document.querySelectorAll('.admin-content').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.admin-tab-btn').forEach(el => {
-        el.classList.remove('bg-white', 'shadow-sm', 'border-l-4', 'border-school-navy', 'text-school-navy');
-        el.classList.add('border-transparent');
+        div.innerHTML = `${bg}${content}<div class="progress-bar-container"><div class="progress-bar"></div></div>`;
+        container.appendChild(div);
     });
-    document.getElementById(tabId).classList.remove('hidden');
-    const btn = Array.from(document.querySelectorAll('.admin-tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
-    if(btn) {
-        btn.classList.add('bg-white', 'shadow-sm', 'border-l-4', 'border-school-navy', 'text-school-navy');
-        btn.classList.remove('border-transparent');
-    }
-};
-
-window.saveTicker = async () => { /* managed by list now */ };
-
-window.saveConfig = async () => {
-    showLoader();
-    try {
-        const logoFile = document.getElementById('conf-logo-file').files[0];
-        let logoBase64 = appData.settings?.logo || "";
-        if (logoFile) { try { logoBase64 = await convertBase64(logoFile); } catch (err) { console.error(err); } }
-        const conf = {
-            schoolName: els.confName.value,
-            subtitle: els.confSubtitle.value,
-            subtitle2: els.confSubtitle2.value,
-            location: els.confLocation.value,
-            googleCalendar: els.confCalendar.value,
-            logo: logoBase64
-        };
-        if (appData.settingsId) await updateDoc(doc(getCollectionRef(COLLECTIONS.SETTINGS), appData.settingsId), conf);
-        else await addDoc(getCollectionRef(COLLECTIONS.SETTINGS), conf);
-    } catch(e) { console.error(e); }
-    hideLoader();
-};
-
-function showLoader() { document.getElementById('global-loader').classList.remove('hidden'); }
-function hideLoader() { document.getElementById('global-loader').classList.add('hidden'); }
-
-function renderAdminList(type, data) {
-    const container = els[`admin${type.charAt(0).toUpperCase() + type.slice(1)}`];
-    if (!container) return;
-    if (data.length === 0) { container.innerHTML = `<p class="text-gray-500 italic col-span-3">No items found.</p>`; return; }
-    container.innerHTML = data.map(item => {
-        let mainText = item.title || item.name || item.text;
-        let subText = item.description || item.dept || item.datetime || '';
-        let img = item.image;
-        if (type === 'ticker') { const tmp = document.createElement("DIV"); tmp.innerHTML = mainText; mainText = tmp.textContent || tmp.innerText || ""; subText = "Ticker Message"; } 
-        else if (type === 'media') { mainText = item.type.toUpperCase() + ' Media'; subText = item.content ? item.content.substring(0, 40) + '...' : 'No Content'; if (item.type === 'image') img = item.content; }
-        return `
-        <div class="bg-white p-4 rounded-lg shadow border border-gray-200 flex justify-between items-start group">
-            <div class="flex items-start space-x-3 overflow-hidden">
-                ${img ? `<img src="${img}" class="w-10 h-10 rounded-full object-cover border">` : ''}
-                <div class="min-w-0"><h4 class="font-bold text-gray-800 truncate text-sm">${mainText}</h4><p class="text-xs text-gray-500 truncate">${subText || ''}</p></div>
-            </div>
-            <div class="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onclick="editEntry('${type}', '${item.id}')" class="text-blue-600 hover:text-blue-800"><i class="fas fa-edit"></i></button>
-                <button onclick="deleteEntry('${type}', '${item.id}')" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
-            </div>
-        </div>`;
-    }).join('');
 }
 
-let currentEditType = null;
-let currentEditId = null;
-
-window.openEntryModal = (type) => {
-    currentEditType = type;
-    currentEditId = null;
-    document.getElementById('entry-modal-title').innerText = `Add ${type.charAt(0).toUpperCase() + type.slice(1, type.endsWith('s') ? -1 : undefined)}`; 
-    document.getElementById('entry-form').reset();
-    generateFormFields(type, null);
-    document.getElementById('entry-modal').classList.remove('hidden');
-};
-
-window.editEntry = (type, id) => {
-    currentEditType = type;
-    currentEditId = id;
-    const item = appData[type].find(i => i.id === id);
-    if (!item) return;
-    document.getElementById('entry-modal-title').innerText = `Edit ${type.charAt(0).toUpperCase() + type.slice(1, type.endsWith('s') ? -1 : undefined)}`;
-    generateFormFields(type, item);
-    document.getElementById('entry-modal').classList.remove('hidden');
-};
-
-window.closeEntryModal = () => { document.getElementById('entry-modal').classList.add('hidden'); };
-
-window.deleteEntry = async (type, id) => {
-    if(!confirm("Are you sure?")) return;
-    showLoader();
-    try { await deleteDoc(doc(getCollectionRef(type), id)); } catch(e) { console.error(e); }
-    hideLoader();
-};
-
-window.handleEntrySubmit = async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData.entries());
-    if (currentEditType === 'announcements') data.urgent = formData.get('urgent') === 'on';
-    const fileInput = document.getElementById('form-image-file');
-    if (fileInput && fileInput.files.length > 0) {
-        try { data.image = await convertBase64(fileInput.files[0]); } catch(err) { console.error("Image error"); }
-    } else if (!data.image && currentEditId) {
-         const oldItem = appData[currentEditType].find(i => i.id === currentEditId);
-         if(oldItem && oldItem.image) data.image = oldItem.image;
+// 5. Media Feed Logic
+function renderMediaFeed() {
+    const container = document.getElementById('media-carousel');
+    // If no items, show placeholder
+    if (carousels.media.data.length === 0) {
+        container.innerHTML = '<div class="text-white flex flex-col items-center justify-center h-full"><i class="fa-solid fa-photo-film text-4xl mb-2"></i><p>No Media</p></div>';
+        return;
     }
-    if (data.image && data.image.includes('drive.google.com')) {
-        const idMatch = data.image.match(/[-\w]{25,}/);
-        if(idMatch) data.image = `https://lh3.googleusercontent.com/d/${idMatch[0]}`;
+    showMediaSlide(0);
+}
+
+function showMediaSlide(index) {
+    const items = carousels.media.data;
+    if (items.length === 0) return;
+    
+    // Wrap index
+    const i = index % items.length;
+    carousels.media.currentIndex = i;
+    const item = items[i];
+    const container = document.getElementById('media-carousel');
+    container.innerHTML = ''; // Clear previous
+
+    if (item.type === 'youtube') {
+        // Create div for player
+        const vidDiv = document.createElement('div');
+        vidDiv.id = 'yt-player';
+        vidDiv.className = "w-full h-full";
+        container.appendChild(vidDiv);
+
+        // Extract ID (handles standard links and youtu.be links)
+        let videoId = item.content;
+        if (item.content.includes('v=')) {
+            videoId = item.content.split('v=')[1]?.split('&')[0];
+        } else if (item.content.includes('youtu.be/')) {
+            videoId = item.content.split('youtu.be/')[1];
+        }
+
+        player = new YT.Player('yt-player', {
+            height: '100%',
+            width: '100%',
+            videoId: videoId,
+            playerVars: { 'autoplay': 1, 'controls': 0, 'mute': 1, 'loop': 0, 'rel': 0 }, // Muted for autoplay policy compliance usually
+            events: {
+                'onStateChange': onPlayerStateChange
+            }
+        });
+        carousels.media.isVideoPlaying = true;
+    } else {
+        // Image
+        carousels.media.isVideoPlaying = false;
+        const img = document.createElement('img');
+        img.src = item.content;
+        img.className = "w-full h-full object-cover animate-fade-in";
+        container.appendChild(img);
+        
+        // Manual rotation for images
+        setTimeout(() => {
+            // Check if we are still on the image slide (user didn't manually intervene, though no controls exist here)
+            // And ensure we aren't somehow playing a video now.
+            if(!carousels.media.isVideoPlaying) showMediaSlide(i + 1);
+        }, 10000);
     }
-    showLoader();
+}
+
+function onPlayerStateChange(event) {
+    if (event.data === YT.PlayerState.ENDED) {
+        carousels.media.isVideoPlaying = false;
+        showMediaSlide(carousels.media.currentIndex + 1);
+    }
+    // Handle errors (skip video)
+    if(event.data === -1) { /* unstarted */ }
+}
+
+// --- Rotation Logic ---
+function startCarouselRotation(key) {
+    if (carousels[key].interval) clearInterval(carousels[key].interval);
+    
+    const container = document.getElementById(carousels[key].id);
+    let index = 0;
+    
+    carousels[key].interval = setInterval(() => {
+        const slides = container.querySelectorAll('.slide');
+        if (slides.length < 2) return;
+        
+        slides[index].classList.remove('active');
+        index = (index + 1) % slides.length;
+        slides[index].classList.add('active');
+    }, carousels[key].duration);
+}
+
+// --- Utilities ---
+async function fetchWeather(location) {
     try {
-        if (currentEditId) await updateDoc(doc(getCollectionRef(currentEditType), currentEditId), data);
-        else await addDoc(getCollectionRef(currentEditType), data);
-        closeEntryModal();
-    } catch(err) { console.error(err); alert("Error saving."); }
-    hideLoader();
-};
+        const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${location}&count=1`);
+        const geoData = await geoRes.json();
+        
+        if(!geoData.results) {
+            document.querySelector('#weather span').textContent = "Locating...";
+            return;
+        }
+        
+        const { latitude, longitude } = geoData.results[0];
+        
+        // Fetch Fahrenheit for US context
+        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&temperature_unit=fahrenheit`);
+        const weatherData = await weatherRes.json();
+        
+        const temp = Math.round(weatherData.current_weather.temperature);
+        document.querySelector('#weather span').textContent = `${temp}°F ${location}`;
+    } catch (e) {
+        console.error("Weather Error", e);
+    }
+}
 
-function generateFormFields(type, values) {
-    const container = document.getElementById('entry-fields');
-    let html = '';
-    const v = values || {};
-    const toolbar = (fieldName) => `
-        <div class="space-x-1 flex items-center">
-            <button type="button" onclick="formatText('${fieldName}', 'b')" class="px-2 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs font-bold" title="Bold">B</button>
-            <button type="button" onclick="formatText('${fieldName}', 'i')" class="px-2 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs italic" title="Italic">I</button>
+function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('date').textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+}
+
+// --- ADMIN & SECURITY ---
+
+// Selectors
+const adminBtn = document.getElementById('admin-btn');
+const loginModal = document.getElementById('login-modal');
+const adminPanel = document.getElementById('admin-panel');
+const closeBtns = document.querySelectorAll('.modal-close');
+
+// Toggle UI
+adminBtn.addEventListener('click', () => {
+    const user = auth.currentUser;
+    if (user) {
+        openAdminPanel();
+    } else {
+        loginModal.classList.remove('hidden');
+    }
+});
+
+closeBtns.forEach(btn => btn.addEventListener('click', () => {
+    loginModal.classList.add('hidden');
+    adminPanel.classList.add('hidden');
+}));
+
+// Login Logic
+document.getElementById('login-submit').addEventListener('click', () => {
+    const e = document.getElementById('email').value;
+    const p = document.getElementById('password').value;
+    signInWithEmailAndPassword(auth, e, p)
+        .then(() => {
+            loginModal.classList.add('hidden');
+            openAdminPanel();
+        })
+        .catch(err => alert("Login Failed: " + err.message));
+});
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+    signOut(auth).then(() => {
+        adminPanel.classList.add('hidden');
+        alert("Logged out");
+    });
+});
+
+// Admin Panel Logic
+function openAdminPanel() {
+    adminPanel.classList.remove('hidden');
+    loadAdminTab('config'); // Load default
+}
+
+document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        // UI Update
+        document.querySelectorAll('.admin-tab-btn').forEach(b => {
+            b.classList.remove('bg-navy', 'text-white');
+            b.classList.add('hover:bg-gray-200', 'text-gray-700');
+        });
+        e.target.classList.remove('hover:bg-gray-200', 'text-gray-700');
+        e.target.classList.add('bg-navy', 'text-white');
+        
+        loadAdminTab(e.target.dataset.tab);
+    });
+});
+
+// Admin Content Renderer
+function loadAdminTab(tabName) {
+    const content = document.getElementById('admin-content');
+    content.innerHTML = `<h2 class="text-2xl font-bold mb-4 capitalize text-navy">${tabName} Manager</h2>`;
+
+    if(tabName === 'config') {
+        renderConfigForm(content);
+        return;
+    }
+    
+    // Form Container
+    const formDiv = document.createElement('div');
+    formDiv.className = "bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200";
+    formDiv.innerHTML = getFormFields(tabName);
+    
+    const addBtn = document.createElement('button');
+    addBtn.className = "mt-4 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold transition";
+    addBtn.textContent = `Add to ${tabName}`;
+    addBtn.onclick = () => saveItem(tabName);
+    formDiv.appendChild(addBtn);
+    
+    // List Container
+    const listDiv = document.createElement('div');
+    listDiv.className = "grid grid-cols-1 gap-4";
+    
+    content.appendChild(formDiv);
+    content.appendChild(listDiv);
+
+    // Fetch existing
+    getFirestoreDataForAdmin(tabName, listDiv);
+}
+
+function getFormFields(tab) {
+    if(tab === 'announcements') return `
+        <div class="grid grid-cols-1 gap-3">
+            <input id="inp-title" placeholder="Announcement Title" class="border p-3 rounded w-full">
+            <textarea id="inp-desc" placeholder="Details..." class="border p-3 rounded w-full h-24"></textarea>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="inp-urgent" class="w-5 h-5">
+                <label for="inp-urgent" class="font-bold text-red-600">Urgent / Red Alert?</label>
+            </div>
+            <input id="inp-image" placeholder="Image URL (Optional)" class="border p-3 rounded w-full">
+        </div>`;
+        
+    if(tab === 'students') return `
+        <div class="grid grid-cols-1 gap-3">
+            <input id="inp-name" placeholder="Student Name" class="border p-3 rounded w-full">
+            <input id="inp-focus" placeholder="Achievement / Grade (e.g. 'Class of 2026')" class="border p-3 rounded w-full">
+            <textarea id="inp-desc" placeholder="Description of achievement..." class="border p-3 rounded w-full h-24"></textarea>
+            <input id="inp-image" placeholder="Photo URL (Optional)" class="border p-3 rounded w-full">
+        </div>`;
+        
+    if(tab === 'teachers') return `
+        <div class="grid grid-cols-1 gap-3">
+            <input id="inp-name" placeholder="Teacher Name" class="border p-3 rounded w-full">
+            <input id="inp-dept" placeholder="Department (e.g. 'Science')" class="border p-3 rounded w-full">
+            <textarea id="inp-bio" placeholder="Short Bio / Quote..." class="border p-3 rounded w-full h-24"></textarea>
+            <input id="inp-image" placeholder="Photo URL" class="border p-3 rounded w-full">
+        </div>`;
+        
+    if(tab === 'media') return `
+        <div class="grid grid-cols-1 gap-3">
+            <select id="inp-type" class="border p-3 rounded w-full bg-white">
+                <option value="youtube">YouTube Video</option>
+                <option value="image">Image Display</option>
+            </select>
+            <input id="inp-content" placeholder="Paste YouTube Link or Image URL here" class="border p-3 rounded w-full">
+        </div>`;
+        
+    if(tab === 'events') return `
+        <div class="grid grid-cols-1 gap-3">
+            <input id="inp-title" placeholder="Event Title" class="border p-3 rounded w-full">
+            <input type="datetime-local" id="inp-datetime" class="border p-3 rounded w-full">
+            <input id="inp-loc" placeholder="Location (e.g. Gym)" class="border p-3 rounded w-full">
+        </div>`;
+        
+    if(tab === 'ticker') return `<input id="inp-text" placeholder="Scrolling Text" class="border p-3 rounded w-full">`;
+
+    return `<p>Configuration error.</p>`;
+}
+
+async function saveItem(collectionName) {
+    const data = {};
+    
+    // Ticker special case (single doc usually, but we'll treat as list for now or just update the main one)
+    if(collectionName === 'ticker') {
+        const text = document.getElementById('inp-text').value;
+        await setDoc(doc(db, `${DATA_ROOT}/ticker`), { text: text });
+        alert("Ticker Updated!");
+        return;
+    }
+
+    // Harvesting IDs
+    const titleEl = document.getElementById('inp-title');
+    const nameEl = document.getElementById('inp-name');
+    const descEl = document.getElementById('inp-desc');
+    const urgentEl = document.getElementById('inp-urgent');
+    const focusEl = document.getElementById('inp-focus');
+    const typeEl = document.getElementById('inp-type');
+    const contentEl = document.getElementById('inp-content');
+    const deptEl = document.getElementById('inp-dept');
+    const bioEl = document.getElementById('inp-bio');
+    const imgEl = document.getElementById('inp-image');
+    const dateEl = document.getElementById('inp-datetime');
+    const locEl = document.getElementById('inp-loc');
+
+    if(titleEl) data.title = titleEl.value;
+    if(nameEl) data.name = nameEl.value;
+    if(descEl) data.description = descEl.value;
+    if(urgentEl) data.urgent = urgentEl.checked;
+    if(focusEl) data.focus = focusEl.value;
+    if(typeEl) data.type = typeEl.value;
+    if(contentEl) data.content = contentEl.value;
+    if(deptEl) data.dept = deptEl.value;
+    if(bioEl) data.bio = bioEl.value;
+    if(imgEl) data.image = imgEl.value;
+    if(dateEl) data.datetime = dateEl.value;
+    if(locEl) data.location = locEl.value;
+
+    try {
+        await addDoc(collection(db, `${DATA_ROOT}/${collectionName}`), data);
+        loadAdminTab(collectionName); // Refresh UI
+    } catch (error) {
+        console.error("Error adding document: ", error);
+        alert("Error saving: " + error.message);
+    }
+}
+
+function getFirestoreDataForAdmin(colName, container) {
+    if(colName === 'ticker') return; // Handled separately in config usually
+    
+    onSnapshot(collection(db, `${DATA_ROOT}/${colName}`), (snapshot) => {
+        container.innerHTML = '';
+        if(snapshot.empty) {
+            container.innerHTML = '<p class="text-gray-500 italic">No items found.</p>';
+            return;
+        }
+        
+        snapshot.forEach(d => {
+            const item = d.data();
+            const div = document.createElement('div');
+            div.className = "flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border-l-4 border-navy";
+            
+            let label = item.title || item.name || item.content || 'Item';
+            if (item.datetime) label += ` (${new Date(item.datetime).toLocaleDateString()})`;
+            
+            div.innerHTML = `
+                <span class="font-semibold text-gray-700 truncate max-w-[70%]">${label}</span> 
+                <button id="del-${d.id}" class="text-red-500 hover:text-red-700 font-bold px-3 py-1 rounded hover:bg-red-50 transition">
+                    <i class="fa-solid fa-trash"></i> Delete
+                </button>`;
+            
+            container.appendChild(div);
+            
+            // Bind delete event
+            document.getElementById(`del-${d.id}`).addEventListener('click', () => {
+                if(confirm("Are you sure you want to delete this?")) {
+                    deleteDoc(doc(db, `${DATA_ROOT}/${colName}`, d.id));
+                }
+            });
+        });
+    });
+}
+
+function renderConfigForm(container) {
+    container.innerHTML = `
+        <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-gold">
+            <h3 class="text-lg font-bold mb-4">General Settings</h3>
+            
+            <label class="block text-sm font-bold mb-1">School Name</label>
+            <input id="cfg-name" class="border p-2 w-full mb-4 rounded" placeholder="e.g. Central High School">
+            
+            <label class="block text-sm font-bold mb-1">Subtitle 1</label>
+            <input id="cfg-sub1" class="border p-2 w-full mb-4 rounded" placeholder="e.g. Home of the...">
+            
+            <label class="block text-sm font-bold mb-1">Subtitle 2</label>
+            <input id="cfg-sub2" class="border p-2 w-full mb-4 rounded" value="Home of the Tech Warriors (Tó éí Tech Naalʼánígíí Kéyah)">
+            
+            <label class="block text-sm font-bold mb-1">Location (City, ST)</label>
+            <input id="cfg-loc" class="border p-2 w-full mb-4 rounded" placeholder="e.g. Gallup, NM">
+            
+            <label class="block text-sm font-bold mb-1">Logo URL</label>
+            <input id="cfg-logo" class="border p-2 w-full mb-4 rounded" placeholder="https://...">
+
+            <button id="save-cfg" class="bg-navy hover:bg-blue-900 text-white px-6 py-2 rounded shadow font-bold transition">Save Configuration</button>
         </div>
     `;
     
-    if (type === 'announcements') {
-        html += `
-            <div><label class="block text-sm font-bold mb-1">Title</label><input name="title" required value="${v.title || ''}" class="w-full p-2 border rounded"></div>
-            <div><div class="flex justify-between items-center mb-1"><div class="flex items-center"><label class="block text-sm font-bold mr-2">Description</label></div>${toolbar('description')}</div><textarea name="description" required rows="3" class="w-full p-2 border rounded">${v.description || ''}</textarea></div>
-            <div class="flex items-center mt-2"><input type="checkbox" name="urgent" ${v.urgent ? 'checked' : ''} class="h-4 w-4"><label class="ml-2 text-sm font-bold text-red-600">Mark as Urgent</label></div>
-        `;
-    } else if (type === 'students') {
-        html += `
-            <div><label class="block text-sm font-bold mb-1">Student Name</label><input name="name" required value="${v.name || ''}" class="w-full p-2 border rounded"></div>
-            <div><label class="block text-sm font-bold mb-1">Focus Area</label><input name="focus" placeholder="e.g. Science, Basketball" value="${v.focus || ''}" class="w-full p-2 border rounded"></div>
-            <div><div class="flex justify-between items-center mb-1"><div class="flex items-center"><label class="block text-sm font-bold mr-2">Quote / Description</label></div>${toolbar('description')}</div><textarea name="description" required rows="3" class="w-full p-2 border rounded">${v.description || ''}</textarea></div>
-        `;
-    } else if (type === 'teachers') {
-        html += `
-            <div><label class="block text-sm font-bold mb-1">Name</label><input name="name" required value="${v.name || ''}" class="w-full p-2 border rounded"></div>
-            <div><label class="block text-sm font-bold mb-1">Department</label><select name="dept" class="w-full p-2 border rounded">${DEPARTMENTS.map(d => `<option value="${d}" ${v.dept === d ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
-            <div><div class="flex justify-between items-center mb-1"><div class="flex items-center"><label class="block text-sm font-bold mr-2">Bio</label></div>${toolbar('bio')}</div><textarea name="bio" required rows="3" class="w-full p-2 border rounded">${v.bio || ''}</textarea></div>
-        `;
-    } else if (type === 'events') {
-        html += `
-            <div><label class="block text-sm font-bold mb-1">Event Title</label><input name="title" required value="${v.title || ''}" class="w-full p-2 border rounded"></div>
-            <div><label class="block text-sm font-bold mb-1">Date</label><input type="date" name="datetime" required value="${v.datetime || ''}" class="w-full p-2 border rounded"></div>
-            <div><label class="block text-sm font-bold mb-1">Location</label><input name="location" value="${v.location || ''}" class="w-full p-2 border rounded"></div>
-        `;
-    } else if (type === 'ticker') {
-        html += `<div><div class="flex justify-between items-center mb-1"><div class="flex items-center"><label class="block text-sm font-bold mr-2">Message</label></div></div><textarea name="text" required rows="3" class="w-full p-2 border rounded">${v.text || ''}</textarea></div>`;
-    } else if (type === 'media') {
-        html += `
-            <div><label class="block text-sm font-bold mb-1">Media Type</label><select name="type" class="w-full p-2 border rounded">
-                <option value="youtube" ${v.type === 'youtube' ? 'selected' : ''}>YouTube Video</option>
-                <option value="facebook" ${v.type === 'facebook' ? 'selected' : ''}>Facebook Embed Code</option>
-                <option value="image" ${v.type === 'image' ? 'selected' : ''}>Image URL</option>
-            </select></div>
-            <div><label class="block text-sm font-bold mb-1">Content (URL or Code)</label><textarea name="content" required rows="3" class="w-full p-2 border rounded font-mono text-xs" placeholder="Paste URL or Code here...">${v.content || ''}</textarea></div>
-        `;
-    }
-    if (type !== 'events' && type !== 'ticker' && type !== 'media') {
-        html += `
-            <div class="border-t pt-4 mt-2">
-                <label class="block text-sm font-bold mb-1">Image (URL or Upload)</label>
-                <input name="image" placeholder="https://..." value="${v.image && v.image.startsWith('http') ? v.image : ''}" class="w-full p-2 border rounded mb-2 text-sm">
-                <input type="file" id="form-image-file" accept="image/*" class="text-sm">
-                <p class="text-xs text-gray-500 mt-1">Upload converts to Base64 (Max 1MB). URLs preferred.</p>
-            </div>
-        `;
-    }
-    container.innerHTML = html;
+    // Load current values
+    getFirestoreDataForConfig();
+    
+    document.getElementById('save-cfg').addEventListener('click', () => {
+        setDoc(doc(db, `${DATA_ROOT}/settings`), {
+            schoolName: document.getElementById('cfg-name').value,
+            subtitle: document.getElementById('cfg-sub1').value,
+            subtitle2: document.getElementById('cfg-sub2').value,
+            location: document.getElementById('cfg-loc').value,
+            logo: document.getElementById('cfg-logo').value
+        }, { merge: true });
+        alert("Configuration Saved!");
+    });
 }
 
-const convertBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-        const fileReader = new FileReader();
-        fileReader.readAsDataURL(file);
-        fileReader.onload = () => resolve(fileReader.result);
-        fileReader.onerror = (error) => reject(error);
+function getFirestoreDataForConfig() {
+    onSnapshot(doc(db, `${DATA_ROOT}/settings`), (doc) => {
+        if (doc.exists()) {
+            const d = doc.data();
+            if(document.getElementById('cfg-name')) {
+                document.getElementById('cfg-name').value = d.schoolName || '';
+                document.getElementById('cfg-sub1').value = d.subtitle || '';
+                document.getElementById('cfg-sub2').value = d.subtitle2 || '';
+                document.getElementById('cfg-loc').value = d.location || '';
+                document.getElementById('cfg-logo').value = d.logo || '';
+            }
+        }
     });
-};
+}
