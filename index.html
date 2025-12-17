@@ -1,1268 +1,1049 @@
-<!doctype html>
-<html lang="en" class="h-full">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NPHS Digital Bulletin Board</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="/_sdk/element_sdk.js"></script>
-  <style>
-    body {
-      box-sizing: border-box;
-    }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <title>School Digital Bulletin Board</title>
     
-    html, body, #root {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
     
-    @keyframes scroll {
-      0% { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
-    }
-    
-    .ticker-scroll {
-      animation: scroll 60s linear infinite;
-    }
-    
-    .ticker-scroll:hover {
-      animation-play-state: paused;
-    }
-
-    .announcement-card {
-      transition: opacity 0.5s ease-in-out;
-    }
-  </style>
-  <style>@view-transition { navigation: auto; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
- </head>
- <body class="h-full">
-  <div id="root" class="w-full h-full overflow-auto"></div>
-  <script>
-    // Mock data
-    const mockData = {
-      announcements: [
-        { id: '1', title: 'Science Fair Winners', description: 'Congratulations to our science fair champions!', type: 'Science', urgent: false },
-        { id: '2', title: 'Coding Competition', description: 'Sign up for the regional coding challenge by Friday.', type: 'Tech', urgent: false },
-        { id: '3', title: 'Basketball Game Tonight', description: 'Warriors vs. Eagles at 6 PM in the gym.', type: 'Sports', urgent: false },
-        { id: '4', title: 'Early Dismissal Tomorrow', description: 'School will dismiss at 1 PM for staff development.', type: 'General', urgent: true }
-      ],
-      ticker: [
-        'School photos will be taken next week - order forms available in the office',
-        'Join us for the winter concert on January 25th at 7 PM',
-        'Remind students to check lost and found before winter break'
-      ],
-      events: [
-        { id: '1', title: 'Basketball Game', date: 'Today, 6:00 PM', location: 'Main Gym' },
-        { id: '2', title: 'Science Fair', date: 'Tomorrow, 9:00 AM', location: 'Cafeteria' },
-        { id: '3', title: 'Winter Concert', date: 'Friday, 7:00 PM', location: 'Auditorium' },
-        { id: '4', title: 'Parent-Teacher Conferences', date: 'Next Monday, 3:00 PM', location: 'Classrooms' }
-      ]
-    };
-
-    let currentData = {
-      announcements: [...mockData.announcements],
-      ticker: [...mockData.ticker],
-      events: [...mockData.events],
-      studentSpotlights: [
-        { id: '1', title: 'Tech Spotlight', description: 'Congratulations to our students for their outstanding achievements in technology projects this week!' },
-        { id: '2', title: 'Science Fair Winner', description: 'Amazing work by our student on their climate change research project!' }
-      ],
-      teacherSpotlights: [
-        { id: '1', name: 'Ms. Sarah Johnson', department: 'Technology Department', description: 'Celebrating 15 years of inspiring students in computer science and robotics. Thank you for your dedication!' },
-        { id: '2', name: 'Mr. David Chen', department: 'Mathematics', description: 'Outstanding dedication to student success and innovative teaching methods.' }
-      ]
-    };
-
-    let currentStudentSpotlightIndex = 0;
-    let currentTeacherSpotlightIndex = 0;
-    let studentSpotlightInterval = null;
-    let teacherSpotlightInterval = null;
-
-    let currentAnnouncementIndex = 0;
-    let announcementInterval = null;
-    let weatherData = null;
-    let weatherLoading = true;
-    let currentLocation = '';
-
-    const defaultConfig = {
-      background_color: '#f3f4f6',
-      surface_color: '#ffffff',
-      primary_color: '#003893',
-      accent_color: '#facc15',
-      text_color: '#333333',
-      font_family: 'system-ui',
-      font_size: 16,
-      school_name: 'Navajo Pine High School',
-      school_subtitle: 'School of Technology',
-      location: 'Navajo, NM',
-      spotlight_title: 'Student Spotlight',
-      teacher_spotlight_title: 'Teacher/Staff Spotlight',
-      announcements_title: 'Announcements',
-      events_title: 'Upcoming Events'
-    };
-
-    function formatDate(date) {
-      return date.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      });
-    }
-
-    function formatTime(date) {
-      return date.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
-        minute: '2-digit',
-        second: '2-digit'
-      });
-    }
-
-    async function fetchWeather(location) {
-      try {
-        weatherLoading = true;
-        updateWeatherDisplay();
-        
-        const geoResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en&format=json`);
-        const geoData = await geoResponse.json();
-        
-        if (!geoData.results || geoData.results.length === 0) {
-          throw new Error('Location not found');
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        school: {
+                            navy: '#003893',
+                            gold: '#facc15',
+                            goldDark: '#eab308'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Open Sans', 'sans-serif'],
+                        display: ['Montserrat', 'sans-serif'],
+                    }
+                }
+            }
         }
-        
-        const { latitude, longitude, name } = geoData.results[0];
-        
-        const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,weathercode&temperature_unit=fahrenheit&timezone=auto&forecast_days=1`);
-        const weather = await weatherResponse.json();
-        
-        weatherData = {
-          high: Math.round(weather.daily.temperature_2m_max[0]),
-          low: Math.round(weather.daily.temperature_2m_min[0]),
-          code: weather.daily.weathercode[0],
-          locationName: name
-        };
-        weatherLoading = false;
-        updateWeatherDisplay();
-      } catch (error) {
-        weatherData = {
-          high: 72,
-          low: 58,
-          code: 1,
-          locationName: location
-        };
-        weatherLoading = false;
-        updateWeatherDisplay();
-      }
-    }
+    </script>
 
-    function getWeatherIcon(code) {
-      if (code === 0) return '☀️';
-      if (code <= 3) return '⛅';
-      if (code <= 48) return '🌫️';
-      if (code <= 67) return '🌧️';
-      if (code <= 77) return '🌨️';
-      if (code <= 82) return '🌦️';
-      if (code <= 86) return '🌨️';
-      if (code <= 99) return '⛈️';
-      return '☀️';
-    }
+    <!-- Custom CSS (Merged from styles.css) -->
+    <style>
+        body { overflow: hidden; }
+        .school-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .ticker-wrap { width: 100%; overflow: hidden; background-color: #facc15; padding-left: 100%; box-sizing: content-box; }
+        .ticker-move { display: inline-block; white-space: nowrap; padding-right: 100%; box-sizing: content-box; animation: ticker 20s linear infinite; }
+        @keyframes ticker { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .fade-enter { opacity: 0; }
+        .fade-enter-active { opacity: 1; transition: opacity 500ms ease-in; }
+        .fade-exit { opacity: 1; }
+        .fade-exit-active { opacity: 0; transition: opacity 500ms ease-out; }
+        .aspect-circle { aspect-ratio: 1 / 1; }
+        iframe { width: 100%; height: 100%; border: none; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col font-sans text-gray-800">
 
-    function updateWeatherDisplay() {
-      const weatherContainer = document.getElementById('weather-display');
-      if (!weatherContainer) return;
-      
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-      
-      if (weatherLoading) {
-        weatherContainer.innerHTML = `
-          <span style="font-size: 1.5rem;">⏳</span>
-          <div>
-            <div style="font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.7}px; opacity: 0.9;">
-              ${config.location}
-            </div>
-            <div style="font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.95}px; font-weight: 600;">
-              Loading...
-            </div>
-          </div>
-        `;
-      } else if (weatherData) {
-        weatherContainer.innerHTML = `
-          <span style="font-size: 1.5rem;">${getWeatherIcon(weatherData.code)}</span>
-          <div>
-            <div style="font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.7}px; opacity: 0.9;">
-              ${weatherData.locationName}
-            </div>
-            <div style="font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.95}px; font-weight: 600;">
-              ${weatherData.high}° / ${weatherData.low}°
-            </div>
-          </div>
-        `;
-      }
-    }
-
-    function getAnnouncementIcon(type) {
-      const icons = {
-        'Science': '🔬',
-        'Tech': '💻',
-        'Sports': '🏆',
-        'General': '📢'
-      };
-      return icons[type] || '📢';
-    }
-
-    function createWarriorLogo(primaryColor, accentColor) {
-      return `
-        <svg width="50" height="50" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="22" fill="${primaryColor}" />
-          <path d="M 30 45 Q 22 35 18 25 L 20 28 Q 26 38 30 45" fill="${accentColor}" stroke="${primaryColor}" stroke-width="0.5" />
-          <path d="M 28 40 Q 18 28 12 15 L 14 18 Q 22 32 28 40" fill="${accentColor}" stroke="${primaryColor}" stroke-width="0.5" />
-          <path d="M 26 35 Q 14 20 8 8 L 10 11 Q 20 28 26 35" fill="${accentColor}" stroke="${primaryColor}" stroke-width="0.5" />
-          <path d="M 32 50 Q 26 42 22 32 L 24 35 Q 29 44 32 50" fill="#dc2626" stroke="${primaryColor}" stroke-width="0.5" />
-          <path d="M 34 55 Q 30 48 27 40 L 29 43 Q 32 50 34 55" fill="${accentColor}" stroke="${primaryColor}" stroke-width="0.5" />
-          <path d="M 36 60 Q 34 53 32 46 L 34 49 Q 35 55 36 60" fill="#dc2626" stroke="${primaryColor}" stroke-width="0.5" />
-          <circle cx="56" cy="47" r="2.5" fill="white" />
-          <circle cx="56" cy="47" r="1" fill="${primaryColor}" />
-          <rect x="30" y="49" width="42" height="5" fill="${accentColor}" />
-          <circle cx="35" cy="51.5" r="1.5" fill="#dc2626" />
-          <circle cx="42" cy="51.5" r="1.5" fill="#dc2626" />
-          <circle cx="49" cy="51.5" r="1.5" fill="#dc2626" />
-          <circle cx="56" cy="51.5" r="1.5" fill="#dc2626" />
-          <circle cx="63" cy="51.5" r="1.5" fill="#dc2626" />
-          <path d="M 42 75 L 50 88 L 58 75 Z" fill="${primaryColor}" />
-          <path d="M 35 80 L 43 93 L 51 80 Z" fill="${accentColor}" stroke="${primaryColor}" stroke-width="0.5" />
-          <path d="M 49 80 L 57 93 L 65 80 Z" fill="${accentColor}" stroke="${primaryColor}" stroke-width="0.5" />
-          <path d="M 50 70 L 54 74 L 50 78 L 46 74 Z" fill="#dc2626" />
-        </svg>
-      `;
-    }
-
-    function render(config) {
-      const now = new Date();
-      
-      // Fetch weather if location changed
-      if (config.location !== currentLocation) {
-        currentLocation = config.location;
-        fetchWeather(config.location);
-      }
-      
-      const root = document.getElementById('root');
-      root.innerHTML = `
-        <div style="background-color: ${config.background_color}; width: 100%; min-height: 100%;">
-          <!-- Header -->
-          <header style="background-color: ${config.primary_color}; color: white; padding: 1rem;">
-            <div style="max-width: 1400px; margin: 0 auto;">
-              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                  <div style="background-color: white; padding: 0.75rem; border-radius: 0.5rem;">
-                    ${createWarriorLogo(config.primary_color, config.accent_color)}
-                  </div>
-                  <div>
-                    <h1 style="font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.6}px; font-weight: bold; margin: 0;">
-                      ${config.school_name}
-                    </h1>
-                    <p style="font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.85}px; opacity: 0.9; margin: 0.25rem 0 0 0;">
-                      ${config.school_subtitle}
-                    </p>
-                  </div>
+    <!-- Header -->
+    <header class="bg-school-navy text-white pt-3 px-4 pb-2 shadow-lg z-10 flex-none flex flex-col">
+        <div class="flex justify-between items-center mb-1">
+            <!-- Logo & School Info -->
+            <div class="flex items-center space-x-4 w-1/3">
+                <div class="h-20 w-20 bg-white rounded-full flex-none flex items-center justify-center border-4 border-school-gold overflow-hidden school-logo-container relative">
+                    <img id="header-logo" src="https://placehold.co/100x100?text=Logo" alt="School Logo" class="h-full w-full object-cover">
                 </div>
+                <div class="min-w-0">
+                    <h1 id="header-school-name" class="text-3xl font-display font-extrabold tracking-wide uppercase whitespace-nowrap overflow-visible">Navajo Pine HS</h1>
+                    <p id="header-subtitle" class="text-school-gold font-semibold text-lg leading-tight">School of Technology</p>
+                </div>
+            </div>
+
+            <!-- Clock & Date -->
+            <div class="text-center w-1/3">
+                <div id="live-time" class="text-5xl font-display font-bold tabular-nums leading-none">12:00 PM</div>
+                <div id="live-date" class="text-lg text-gray-200 mt-1 uppercase tracking-wider leading-none">Monday, January 1</div>
+            </div>
+
+            <!-- Weather Widget -->
+            <div class="w-1/3 flex justify-end">
+                <div class="bg-blue-900/50 rounded-xl p-2 backdrop-blur-sm border border-blue-700/50 flex items-center space-x-3 min-w-[260px]">
+                    <div class="flex flex-col items-center justify-center px-2 border-r border-blue-700/50">
+                        <span id="weather-city" class="text-[10px] text-school-gold font-bold uppercase mb-0 leading-none">Loading...</span>
+                        <div class="text-2xl my-1" id="weather-current-icon"><i class="fas fa-cloud"></i></div>
+                        <span id="weather-current-temp" class="text-lg font-bold leading-none">--°</span>
+                    </div>
+                    <div class="flex-1 flex justify-between text-center text-xs space-x-1" id="weather-forecast">
+                        <!-- Forecast items injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subtitle 2: Full Width -->
+        <div class="w-full text-center border-t border-white/10 pt-2 mt-1">
+            <p id="header-subtitle-2" class="text-gray-300 font-medium text-sm tracking-[0.2em] uppercase">Home of the Tech Warriors</p>
+        </div>
+    </header>
+
+    <!-- Ticker -->
+    <div class="bg-school-gold text-school-navy font-bold py-2 border-b-4 border-school-navy/20 flex-none z-10 relative shadow-md w-full overflow-hidden">
+        <div class="ticker-wrap">
+            <div class="ticker-move" id="ticker-content">
+                Welcome to our digital bulletin board! Classes start at 8:00 AM. Go Tigers!
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="flex-grow p-4 overflow-hidden flex flex-col md:flex-row gap-6">
+        
+        <!-- Main Grid (75%) -->
+        <div class="w-full md:w-3/4 h-full">
+            <div class="grid grid-cols-1 md:grid-cols-2 grid-rows-2 gap-6 h-full">
                 
-                <div style="display: flex; align-items: center; gap: 1.5rem;">
-                  <div style="text-align: right;">
-                    <div id="time-display" style="font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.5}px; font-weight: bold;">
-                      ${formatTime(now)}
+                <!-- Top Left: Student Spotlight -->
+                <div class="bg-gradient-to-br from-white to-blue-100 rounded-2xl school-shadow border border-gray-200 flex flex-col overflow-hidden relative group">
+                    <div class="bg-school-navy py-2 px-4 flex justify-between items-center">
+                        <h2 class="text-white font-display font-bold text-xl"><i class="fas fa-star text-school-gold mr-2"></i> Student Spotlight</h2>
                     </div>
-                    <div style="font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.75}px; opacity: 0.9;">
-                      ${formatDate(now)}
+                    <div class="flex-grow relative p-6 flex items-center justify-center" id="student-carousel">
+                        <div class="text-center w-full"><p class="text-gray-400">Loading...</p></div>
                     </div>
-                  </div>
-                  
-                  <div id="weather-display" style="background-color: rgba(255, 255, 255, 0.2); padding: 0.5rem 0.75rem; border-radius: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="font-size: 1.5rem;">⏳</span>
-                    <div>
-                      <div style="font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.7}px; opacity: 0.9;">
-                        ${config.location}
-                      </div>
-                      <div style="font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.95}px; font-weight: 600;">
-                        Loading...
-                      </div>
-                    </div>
-                  </div>
+                    <div class="absolute bottom-0 left-0 h-1 bg-school-gold transition-all duration-300" id="student-progress" style="width: 0%"></div>
                 </div>
-              </div>
-            </div>
-          </header>
 
-          <!-- Ticker -->
-          <div style="background-color: ${config.accent_color}; padding: 0.5rem 0; overflow: hidden;">
-            <div class="ticker-scroll" style="white-space: nowrap;">
-              <span style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.95}px; font-weight: 600;">
-                ${currentData.ticker.join(' • ')}
-              </span>
-            </div>
-          </div>
+                <!-- Top Right: Teacher Feature -->
+                <div class="bg-gradient-to-br from-white to-yellow-100 rounded-2xl school-shadow border border-gray-200 flex flex-col overflow-hidden relative">
+                    <div class="bg-school-navy py-2 px-4">
+                        <h2 class="text-white font-display font-bold text-xl"><i class="fas fa-chalkboard-teacher text-school-gold mr-2"></i> Teacher/Staff Feature</h2>
+                    </div>
+                    <div class="flex-grow relative p-6 flex items-center justify-center" id="teacher-carousel">
+                         <div class="text-center w-full"><p class="text-gray-400">Loading...</p></div>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-1 bg-school-gold transition-all duration-300" id="teacher-progress" style="width: 0%"></div>
+                </div>
 
-          <!-- Main Content -->
-          <main style="max-width: 1400px; margin: 0 auto; padding: 1rem; height: calc(100% - 180px); display: flex; flex-direction: column;">
-            <!-- Grid Layout -->
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 1rem; height: 100%;">
-              <!-- Student Spotlight -->
-              <div style="background: linear-gradient(135deg, ${config.primary_color} 0%, ${config.accent_color} 100%); border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 1rem; display: flex; flex-direction: column; min-height: 0;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
-                  <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="font-size: 1.25rem;">🏆</span>
-                    <h2 style="color: white; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.2}px; font-weight: bold; margin: 0;">
-                      ${config.spotlight_title}
-                    </h2>
-                  </div>
-                  ${currentData.studentSpotlights.length > 1 ? `
-                  <div style="display: flex; gap: 0.5rem; align-items: center;">
-                    <button onclick="previousStudentSpotlight()" style="background-color: rgba(255,255,255,0.9); color: ${config.primary_color}; border: none; border-radius: 0.25rem; padding: 0.5rem 0.75rem; cursor: pointer; font-size: 1rem; font-weight: bold;">
-                      ◀
-                    </button>
-                    <span id="student-spotlight-counter" style="color: white; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; font-weight: 600; min-width: 50px; text-align: center;">
-                      1/${currentData.studentSpotlights.length}
-                    </span>
-                    <button onclick="nextStudentSpotlight()" style="background-color: rgba(255,255,255,0.9); color: ${config.primary_color}; border: none; border-radius: 0.25rem; padding: 0.5rem 0.75rem; cursor: pointer; font-size: 1rem; font-weight: bold;">
-                      ▶
-                    </button>
-                  </div>
-                  ` : ''}
+                <!-- Bottom Left: Announcements -->
+                <div class="bg-gradient-to-br from-white to-blue-50 rounded-2xl school-shadow border border-gray-200 flex flex-col overflow-hidden relative">
+                    <div class="bg-school-navy py-2 px-4">
+                        <h2 class="text-white font-display font-bold text-xl"><i class="fas fa-bullhorn text-school-gold mr-2"></i> Announcements</h2>
+                    </div>
+                    <div class="flex-grow relative p-6 flex items-center justify-center" id="announcement-carousel">
+                         <div class="text-center w-full"><p class="text-gray-400">No Announcements</p></div>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-1 bg-school-gold transition-all duration-300" id="announcement-progress" style="width: 0%"></div>
                 </div>
-                <div id="student-spotlight-container" style="background-color: rgba(255,255,255,0.95); border-radius: 0.5rem; padding: 1rem; text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: center;">
-                  ${currentData.studentSpotlights.length > 0 ? `
-                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">🏆</div>
-                    <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.1}px; font-weight: bold; margin-bottom: 0.5rem;">
-                      ${currentData.studentSpotlights[0].title}
-                    </div>
-                    <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px;">
-                      ${currentData.studentSpotlights[0].description}
-                    </div>
-                  ` : `
-                    <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; opacity: 0.5;">
-                      No student spotlight at this time
-                    </div>
-                  `}
-                </div>
-              </div>
 
-              <!-- Teacher/Staff Spotlight -->
-              <div style="background: linear-gradient(135deg, ${config.primary_color} 0%, ${config.accent_color} 100%); border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 1rem; display: flex; flex-direction: column; min-height: 0;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
-                  <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="font-size: 1.25rem;">👨‍🏫</span>
-                    <h2 style="color: white; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.2}px; font-weight: bold; margin: 0;">
-                      ${config.teacher_spotlight_title}
-                    </h2>
-                  </div>
-                  ${currentData.teacherSpotlights.length > 1 ? `
-                  <div style="display: flex; gap: 0.5rem; align-items: center;">
-                    <button onclick="previousTeacherSpotlight()" style="background-color: rgba(255,255,255,0.9); color: ${config.primary_color}; border: none; border-radius: 0.25rem; padding: 0.5rem 0.75rem; cursor: pointer; font-size: 1rem; font-weight: bold;">
-                      ◀
-                    </button>
-                    <span id="teacher-spotlight-counter" style="color: white; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; font-weight: 600; min-width: 50px; text-align: center;">
-                      1/${currentData.teacherSpotlights.length}
-                    </span>
-                    <button onclick="nextTeacherSpotlight()" style="background-color: rgba(255,255,255,0.9); color: ${config.primary_color}; border: none; border-radius: 0.25rem; padding: 0.5rem 0.75rem; cursor: pointer; font-size: 1rem; font-weight: bold;">
-                      ▶
-                    </button>
-                  </div>
-                  ` : ''}
-                </div>
-                <div id="teacher-spotlight-container" style="background-color: rgba(255,255,255,0.95); border-radius: 0.5rem; padding: 1rem; flex: 1; display: flex; align-items: center;">
-                  ${currentData.teacherSpotlights.length > 0 ? `
-                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; width: 100%;">
-                      <div style="width: 60px; height: 60px; background-color: ${config.primary_color}; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; flex-shrink: 0;">
-                        👩‍🏫
-                      </div>
-                      <div style="flex: 1; min-width: 150px;">
-                        <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.05}px; font-weight: bold; margin-bottom: 0.25rem;">
-                          ${currentData.teacherSpotlights[0].name}
-                        </div>
-                        <div style="color: ${config.primary_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.85}px; font-weight: 600; margin-bottom: 0.25rem;">
-                          ${currentData.teacherSpotlights[0].department}
-                        </div>
-                        <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.8}px; line-height: 1.4;">
-                          ${currentData.teacherSpotlights[0].description}
-                        </div>
-                      </div>
+                <!-- Bottom Right: Media Feed -->
+                <div class="bg-black rounded-2xl school-shadow border border-gray-200 flex flex-col overflow-hidden relative" id="media-slot-main">
+                    <div class="bg-school-navy py-2 px-4">
+                        <h3 class="text-white font-display font-bold text-xl"><i class="fas fa-photo-video text-school-gold mr-2"></i> Media Feed</h3>
                     </div>
-                  ` : `
-                    <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; text-align: center; width: 100%; opacity: 0.5;">
-                      No teacher spotlight at this time
-                    </div>
-                  `}
-                </div>
-              </div>
-
-              <!-- Upcoming Events -->
-              <div style="background-color: ${config.surface_color}; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 1rem; display: flex; flex-direction: column; min-height: 0;">
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
-                  <span style="color: ${config.accent_color}; font-size: 1.25rem;">📅</span>
-                  <h2 style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.2}px; font-weight: bold; margin: 0;">
-                    ${config.events_title}
-                  </h2>
-                </div>
-                <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem;">
-                  ${currentData.events.map(event => `
-                    <div style="background-color: ${config.background_color}; padding: 0.75rem; border-radius: 0.5rem; border-left: 4px solid ${config.primary_color};">
-                      <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px; font-weight: 700; margin-bottom: 0.25rem;">
-                        ${event.title}
-                      </div>
-                      <div style="color: ${config.primary_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.85}px; font-weight: 600; margin-bottom: 0.25rem;">
-                        📅 ${event.date}
-                      </div>
-                      <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.8}px; opacity: 0.75;">
-                        📍 ${event.location}
-                      </div>
-                    </div>
-                  `).join('')}
-                </div>
-              </div>
-
-              <!-- Announcements -->
-              <div style="background-color: ${config.surface_color}; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 1rem; display: flex; flex-direction: column; min-height: 0;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
-                  <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="color: ${config.accent_color}; font-size: 1.25rem;">📢</span>
-                    <h2 style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.2}px; font-weight: bold; margin: 0;">
-                      ${config.announcements_title}
-                    </h2>
-                  </div>
-                  <div style="display: flex; gap: 0.5rem; align-items: center;">
-                    <button onclick="previousAnnouncement()" style="background-color: ${config.primary_color}; color: white; border: none; border-radius: 0.25rem; padding: 0.5rem 0.75rem; cursor: pointer; font-size: 1rem; font-weight: bold;">
-                      ◀
-                    </button>
-                    <span id="announcement-counter" style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; font-weight: 600; min-width: 50px; text-align: center;">
-                      1/${currentData.announcements.length}
-                    </span>
-                    <button onclick="nextAnnouncement()" style="background-color: ${config.primary_color}; color: white; border: none; border-radius: 0.25rem; padding: 0.5rem 0.75rem; cursor: pointer; font-size: 1rem; font-weight: bold;">
-                      ▶
-                    </button>
-                  </div>
-                </div>
-                <div id="announcement-container" style="flex: 1; position: relative; overflow-y: auto;">
-                  ${currentData.announcements.length > 0 ? `
-                    <div class="announcement-card" style="background-color: ${currentData.announcements[0].urgent ? '#fee2e2' : config.background_color}; border: 2px solid ${currentData.announcements[0].urgent ? '#dc2626' : 'transparent'}; padding: 1rem; border-radius: 0.5rem; height: 100%; display: flex; align-items: center;">
-                      <div style="display: flex; align-items: start; gap: 0.75rem; width: 100%;">
-                        <div style="color: ${config.primary_color}; font-size: 2rem;">
-                          ${getAnnouncementIcon(currentData.announcements[0].type)}
-                        </div>
-                        <div style="flex: 1;">
-                          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
-                            <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.1}px; font-weight: 700;">
-                              ${currentData.announcements[0].title}
+                    <div class="flex-grow bg-black relative" id="media-carousel">
+                        <!-- Dynamic Media Content -->
+                        <div class="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
+                            <div class="text-center">
+                                <i class="fas fa-play-circle fa-2x mb-2"></i>
+                                <p>No Media Set</p>
                             </div>
-                            ${currentData.announcements[0].urgent ? `<span style="background-color: #dc2626; color: white; padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.7}px; font-weight: 700;">URGENT</span>` : ''}
-                          </div>
-                          <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.95}px; line-height: 1.5; margin-bottom: 0.5rem;">
-                            ${currentData.announcements[0].description}
-                          </div>
-                          <div style="color: ${config.primary_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.8}px; font-weight: 700;">
-                            ${currentData.announcements[0].type}
-                          </div>
                         </div>
-                      </div>
                     </div>
-                  ` : `
-                    <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; text-align: center; padding: 2rem; opacity: 0.5; height: 100%; display: flex; align-items: center; justify-content: center;">
-                      No announcements at this time
+                    <div class="absolute bottom-0 left-0 h-1 bg-school-gold transition-all duration-300 z-10" id="media-progress" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar / Aside (25%) - Upcoming Events -->
+        <aside class="w-full md:w-1/4 h-full flex flex-col">
+            <div class="bg-gradient-to-br from-white to-gray-200 rounded-2xl school-shadow border border-gray-200 flex flex-col overflow-hidden h-full">
+                <div class="bg-school-navy py-2 px-4 flex justify-between items-center">
+                    <h2 class="text-white font-display font-bold text-xl"><i class="fas fa-calendar-alt text-school-gold mr-2"></i> Events</h2>
+                    <span class="text-xs text-white bg-blue-800 px-2 py-1 rounded">Upcoming</span>
+                </div>
+                <div class="flex-grow overflow-y-auto custom-scrollbar p-4" id="events-list">
+                        <div class="text-center w-full text-gray-400 mt-4">Loading Events...</div>
+                </div>
+            </div>
+        </aside>
+
+    </main>
+
+    <!-- Admin Button (Anonymous) -->
+    <button onclick="handleAdminClick()" class="fixed bottom-6 right-6 bg-gray-800/80 hover:bg-school-navy text-white p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 z-50 backdrop-blur">
+        <i class="fas fa-cog fa-lg"></i>
+    </button>
+
+    <!-- Admin Modal -->
+    <div id="admin-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-5xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="bg-gray-800 text-white p-4 flex justify-between items-center">
+                <h3 class="text-xl font-bold font-display"><i class="fas fa-sliders-h mr-2"></i> Dashboard Configuration</h3>
+                <button onclick="toggleAdminModal()" class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-times fa-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="flex flex-grow overflow-hidden">
+                <!-- Sidebar Tabs -->
+                <div class="w-1/5 bg-gray-100 border-r border-gray-200 overflow-y-auto">
+                    <nav class="flex flex-col p-2 space-y-1" id="admin-tabs">
+                        <button onclick="switchTab('tab-announcements')" class="admin-tab-btn active text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent">
+                            <i class="fas fa-bullhorn w-6"></i> Announcements
+                        </button>
+                        <button onclick="switchTab('tab-students')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent">
+                            <i class="fas fa-user-graduate w-6"></i> Students
+                        </button>
+                        <button onclick="switchTab('tab-teachers')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent">
+                            <i class="fas fa-chalkboard-teacher w-6"></i> Teacher/Staff
+                        </button>
+                        <button onclick="switchTab('tab-events')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent">
+                            <i class="fas fa-calendar-alt w-6"></i> Events
+                        </button>
+                        <button onclick="switchTab('tab-ticker')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent">
+                            <i class="fas fa-scroll w-6"></i> Ticker
+                        </button>
+                         <button onclick="switchTab('tab-media')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent">
+                            <i class="fas fa-photo-video w-6"></i> Media Sidebar
+                        </button>
+                        <button onclick="switchTab('tab-config')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent">
+                            <i class="fas fa-tools w-6"></i> Config
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Content Area -->
+                <div class="w-4/5 p-8 overflow-y-auto bg-gray-50 relative">
+                    
+                    <!-- Tab: Announcements -->
+                    <div id="tab-announcements" class="admin-content block">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">Manage Announcements</h2>
+                            <button onclick="openEntryModal('announcements')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add New</button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="admin-announcements-list"></div>
                     </div>
-                  `}
+
+                    <!-- Tab: Students -->
+                    <div id="tab-students" class="admin-content hidden">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">Manage Student Spotlight</h2>
+                            <button onclick="openEntryModal('students')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add Student</button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="admin-students-list"></div>
+                    </div>
+
+                    <!-- Tab: Teachers -->
+                    <div id="tab-teachers" class="admin-content hidden">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">Manage Teacher/Staff Features</h2>
+                            <button onclick="openEntryModal('teachers')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add Feature</button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="admin-teachers-list"></div>
+                    </div>
+
+                    <!-- Tab: Events -->
+                    <div id="tab-events" class="admin-content hidden">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">Manage Manual Events</h2>
+                            <button onclick="openEntryModal('events')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add Event</button>
+                        </div>
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                            <p class="text-sm text-blue-700"><strong>Note:</strong> Events from your Google Calendar link (set in Config) are fetched automatically. Add manual events here for things not on the calendar.</p>
+                        </div>
+                        <div class="space-y-2" id="admin-events-list"></div>
+                    </div>
+
+                    <!-- Tab: Ticker -->
+                    <div id="tab-ticker" class="admin-content hidden">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">Manage Ticker Messages</h2>
+                            <button onclick="openEntryModal('ticker')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add Message</button>
+                        </div>
+                        <div class="space-y-2" id="admin-ticker-list"></div>
+                    </div>
+
+                    <!-- Tab: Media Sidebar -->
+                    <div id="tab-media" class="admin-content hidden">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">Manage Media Sidebar</h2>
+                            <button onclick="openEntryModal('media')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add Media</button>
+                        </div>
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                            <p class="text-sm text-blue-700">
+                                <strong>Instructions:</strong> Add YouTube videos, Facebook embeds, or Images. These items will rotate automatically in the sidebar. <br>
+                                <strong>Note:</strong> Carousel will wait for videos to finish playing before rotating.
+                            </p>
+                        </div>
+                        <div class="space-y-2" id="admin-media-list"></div>
+                    </div>
+
+                    <!-- Tab: Config -->
+                    <div id="tab-config" class="admin-content hidden">
+                        <div class="max-w-3xl mx-auto space-y-6">
+                            <div class="bg-white p-6 rounded-xl shadow-sm border">
+                                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">School Identity</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label class="block text-sm font-medium text-gray-700">School Name</label>
+                                            <div class="space-x-1">
+                                                <button type="button" onclick="formatText('conf-name', 'b')" class="px-2 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs font-bold" title="Bold">B</button>
+                                                <button type="button" onclick="formatText('conf-name', 'i')" class="px-2 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs italic" title="Italic">I</button>
+                                            </div>
+                                        </div>
+                                        <input type="text" id="conf-name" class="w-full p-2 border rounded">
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label class="block text-sm font-medium text-gray-700">Subtitle</label>
+                                            <div class="space-x-1">
+                                                <button type="button" onclick="formatText('conf-subtitle', 'b')" class="px-2 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs font-bold" title="Bold">B</button>
+                                                <button type="button" onclick="formatText('conf-subtitle', 'i')" class="px-2 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs italic" title="Italic">I</button>
+                                            </div>
+                                        </div>
+                                        <input type="text" id="conf-subtitle" class="w-full p-2 border rounded">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label class="block text-sm font-medium text-gray-700">Subtitle 2</label>
+                                            <div class="space-x-1">
+                                                <button type="button" onclick="formatText('conf-subtitle-2', 'b')" class="px-2 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs font-bold" title="Bold">B</button>
+                                                <button type="button" onclick="formatText('conf-subtitle-2', 'i')" class="px-2 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs italic" title="Italic">I</button>
+                                            </div>
+                                        </div>
+                                        <input type="text" id="conf-subtitle-2" class="w-full p-2 border rounded" placeholder="e.g. Home of the Tech Warriors">
+                                    </div>
+                                    
+                                    <!-- Logo Upload Section -->
+                                    <div class="md:col-span-2 border-t pt-4 mt-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">School Logo</label>
+                                        <div class="flex items-center space-x-4">
+                                            <div class="h-16 w-16 bg-white rounded-full border flex items-center justify-center overflow-hidden flex-none">
+                                                 <img id="conf-logo-preview" src="https://placehold.co/100x100?text=Logo" class="h-full w-full object-cover">
+                                            </div>
+                                            <input type="file" id="conf-logo-file" accept="image/*" class="text-sm block w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-school-navy/10 file:text-school-navy hover:file:bg-school-navy/20">
+                                        </div>
+                                        <p class="text-xs text-gray-500 mt-1 ml-20">Upload a square image (PNG/JPG). Max 1MB (Firestore limit).</p>
+                                    </div>
+
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-xl shadow-sm border">
+                                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Integrations</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Weather Location (City, State)</label>
+                                        <input type="text" id="conf-location" class="w-full p-2 border rounded" placeholder="e.g. Navajo, NM">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Google Calendar Public iCal Link (.ics)</label>
+                                        <input type="text" id="conf-calendar" class="w-full p-2 border rounded" placeholder="https://calendar.google.com/.../basic.ics">
+                                        <p class="text-xs text-gray-500 mt-1">Paste the "Public address in iCal format" from your Google Calendar settings.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button onclick="saveConfig()" class="w-full bg-school-navy hover:bg-blue-800 text-white font-bold py-3 rounded-lg transition-colors shadow">Save Configuration</button>
+                        </div>
+                    </div>
+
                 </div>
-              </div>
             </div>
-          </main>
-
-          <!-- Admin Button -->
-          <button onclick="openAdmin()" style="position: fixed; bottom: 1.5rem; right: 1.5rem; background-color: ${config.primary_color}; color: white; padding: 1rem; border-radius: 50%; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.2); cursor: pointer; font-size: 1.5rem;" title="Admin Panel">
-            ⚙️
-          </button>
-
-          <!-- Admin Modal (hidden by default) -->
-          <div id="admin-modal" style="display: none; position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); z-index: 1000; padding: 1rem;">
-            <div style="background-color: ${config.surface_color}; border-radius: 0.5rem; box-shadow: 0 20px 25px rgba(0,0,0,0.3); width: 100%; max-width: 900px; max-height: 90%; margin: auto; display: flex; flex-direction: column; overflow: hidden;">
-              <div style="background-color: ${config.primary_color}; padding: 1.5rem; color: white; display: flex; align-items: center; justify-content: space-between;">
-                <h2 style="font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.5}px; font-weight: bold; margin: 0;">
-                  Admin Panel
-                </h2>
-                <button onclick="closeAdmin()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 0.25rem;">✕</button>
-              </div>
-
-              <div style="display: flex; border-bottom: 1px solid #e5e7eb; overflow-x: auto;">
-                <button id="tab-announcements" onclick="switchTab('announcements')" style="padding: 0.75rem 1.5rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px; font-weight: 600; border: none; background: none; cursor: pointer; border-bottom: 2px solid ${config.primary_color}; color: ${config.primary_color}; white-space: nowrap;">
-                  Announcements
-                </button>
-                <button id="tab-ticker" onclick="switchTab('ticker')" style="padding: 0.75rem 1.5rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px; font-weight: 600; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; color: ${config.text_color}; white-space: nowrap;">
-                  Ticker
-                </button>
-                <button id="tab-events" onclick="switchTab('events')" style="padding: 0.75rem 1.5rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px; font-weight: 600; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; color: ${config.text_color}; white-space: nowrap;">
-                  Events
-                </button>
-                <button id="tab-student-spotlight" onclick="switchTab('student-spotlight')" style="padding: 0.75rem 1.5rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px; font-weight: 600; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; color: ${config.text_color}; white-space: nowrap;">
-                  Student Spotlight
-                </button>
-                <button id="tab-teacher-spotlight" onclick="switchTab('teacher-spotlight')" style="padding: 0.75rem 1.5rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px; font-weight: 600; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; color: ${config.text_color}; white-space: nowrap;">
-                  Teacher Spotlight
-                </button>
-              </div>
-
-              <div id="admin-content" style="flex: 1; overflow-y: auto; padding: 1.5rem;">
-                <!-- Content will be inserted here -->
-              </div>
-            </div>
-          </div>
         </div>
-      `;
+    </div>
 
-      // Update weather display with current data
-      updateWeatherDisplay();
-
-      // Start clock update
-      updateClock();
-      setInterval(updateClock, 1000);
-
-      // Start carousels
-      startAnnouncementCarousel();
-      startStudentSpotlightCarousel();
-      startTeacherSpotlightCarousel();
-
-      // Show announcements tab by default
-      switchTab('announcements');
-    }
-
-    function updateClock() {
-      const timeDisplay = document.getElementById('time-display');
-      if (timeDisplay) {
-        timeDisplay.textContent = formatTime(new Date());
-      }
-    }
-
-    function startAnnouncementCarousel() {
-      if (announcementInterval) {
-        clearInterval(announcementInterval);
-      }
-      
-      if (currentData.announcements.length > 1) {
-        announcementInterval = setInterval(() => {
-          nextAnnouncement();
-        }, 5000);
-      }
-    }
-
-    function startStudentSpotlightCarousel() {
-      if (studentSpotlightInterval) {
-        clearInterval(studentSpotlightInterval);
-      }
-      
-      if (currentData.studentSpotlights.length > 1) {
-        studentSpotlightInterval = setInterval(() => {
-          nextStudentSpotlight();
-        }, 7000);
-      }
-    }
-
-    function startTeacherSpotlightCarousel() {
-      if (teacherSpotlightInterval) {
-        clearInterval(teacherSpotlightInterval);
-      }
-      
-      if (currentData.teacherSpotlights.length > 1) {
-        teacherSpotlightInterval = setInterval(() => {
-          nextTeacherSpotlight();
-        }, 7000);
-      }
-    }
-
-    function showAnnouncement(index) {
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-      const container = document.getElementById('announcement-container');
-      const counter = document.getElementById('announcement-counter');
-      
-      if (!container || !currentData.announcements.length) return;
-      
-      currentAnnouncementIndex = index;
-      const announcement = currentData.announcements[index];
-      
-      if (counter) {
-        counter.textContent = `${index + 1}/${currentData.announcements.length}`;
-      }
-      
-      container.innerHTML = `
-        <div class="announcement-card" style="background-color: ${announcement.urgent ? '#fee2e2' : config.background_color}; border: 2px solid ${announcement.urgent ? '#dc2626' : 'transparent'}; padding: 1rem; border-radius: 0.5rem; height: 100%; display: flex; align-items: center;">
-          <div style="display: flex; align-items: start; gap: 0.75rem; width: 100%;">
-            <div style="color: ${config.primary_color}; font-size: 2rem;">
-              ${getAnnouncementIcon(announcement.type)}
-            </div>
-            <div style="flex: 1;">
-              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
-                <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.1}px; font-weight: 700;">
-                  ${announcement.title}
+    <!-- Entry Edit/Add Modal (Generic) -->
+    <div id="entry-modal" class="fixed inset-0 bg-black/50 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+            <h3 id="entry-modal-title" class="text-xl font-bold mb-4">Add Item</h3>
+            <form id="entry-form" onsubmit="handleEntrySubmit(event)" class="space-y-4">
+                <!-- Dynamic Fields injected here -->
+                <div id="entry-fields"></div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeEntryModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-school-navy text-white rounded hover:bg-blue-800">Save</button>
                 </div>
-                ${announcement.urgent ? `<span style="background-color: #dc2626; color: white; padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.7}px; font-weight: 700;">URGENT</span>` : ''}
-              </div>
-              <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.95}px; line-height: 1.5; margin-bottom: 0.5rem;">
-                ${announcement.description}
-              </div>
-              <div style="color: ${config.primary_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.8}px; font-weight: 700;">
-                ${announcement.type}
-              </div>
-            </div>
-          </div>
+            </form>
         </div>
-      `;
-    }
+    </div>
 
-    function nextAnnouncement() {
-      if (currentData.announcements.length === 0) return;
-      const nextIndex = (currentAnnouncementIndex + 1) % currentData.announcements.length;
-      showAnnouncement(nextIndex);
-    }
+    <!-- Loading Indicator -->
+    <div id="global-loader" class="fixed top-4 right-4 bg-white px-4 py-2 rounded-full shadow-lg z-[100] hidden flex items-center space-x-2">
+        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-school-navy"></div>
+        <span class="text-xs font-bold text-school-navy">Saving...</span>
+    </div>
 
-    function previousAnnouncement() {
-      if (currentData.announcements.length === 0) return;
-      const prevIndex = currentAnnouncementIndex === 0 ? currentData.announcements.length - 1 : currentAnnouncementIndex - 1;
-      showAnnouncement(prevIndex);
-    }
+    <!-- Main Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, setDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    function showStudentSpotlight(index) {
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-      const container = document.getElementById('student-spotlight-container');
-      const counter = document.getElementById('student-spotlight-counter');
-      
-      if (!container || !currentData.studentSpotlights.length) return;
-      
-      currentStudentSpotlightIndex = index;
-      const spotlight = currentData.studentSpotlights[index];
-      
-      if (counter) {
-        counter.textContent = `${index + 1}/${currentData.studentSpotlights.length}`;
-      }
-      
-      container.innerHTML = `
-        <div style="font-size: 3rem; margin-bottom: 0.5rem;">🏆</div>
-        <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.1}px; font-weight: bold; margin-bottom: 0.5rem;">
-          ${spotlight.title}
-        </div>
-        <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px;">
-          ${spotlight.description}
-        </div>
-      `;
-    }
+        // Inject YouTube IFrame API
+        let ytApiReady = false;
+        window.onYouTubeIframeAPIReady = () => { ytApiReady = true; };
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-    function nextStudentSpotlight() {
-      if (currentData.studentSpotlights.length === 0) return;
-      const nextIndex = (currentStudentSpotlightIndex + 1) % currentData.studentSpotlights.length;
-      showStudentSpotlight(nextIndex);
-    }
+        // --- Configuration ---
+        // Using System Variables for Preview Environment
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'navajo-pine-hs-v1'; 
 
-    function previousStudentSpotlight() {
-      if (currentData.studentSpotlights.length === 0) return;
-      const prevIndex = currentStudentSpotlightIndex === 0 ? currentData.studentSpotlights.length - 1 : currentStudentSpotlightIndex - 1;
-      showStudentSpotlight(prevIndex);
-    }
+        let currentUser = null;
+        let appData = { announcements: [], students: [], teachers: [], events: [], externalEvents: [], ticker: "", settings: {}, media: [] };
 
-    function showTeacherSpotlight(index) {
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-      const container = document.getElementById('teacher-spotlight-container');
-      const counter = document.getElementById('teacher-spotlight-counter');
-      
-      if (!container || !currentData.teacherSpotlights.length) return;
-      
-      currentTeacherSpotlightIndex = index;
-      const spotlight = currentData.teacherSpotlights[index];
-      
-      if (counter) {
-        counter.textContent = `${index + 1}/${currentData.teacherSpotlights.length}`;
-      }
-      
-      container.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; width: 100%;">
-          <div style="width: 60px; height: 60px; background-color: ${config.primary_color}; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; flex-shrink: 0;">
-            👩‍🏫
-          </div>
-          <div style="flex: 1; min-width: 150px;">
-            <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.05}px; font-weight: bold; margin-bottom: 0.25rem;">
-              ${spotlight.name}
-            </div>
-            <div style="color: ${config.primary_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.85}px; font-weight: 600; margin-bottom: 0.25rem;">
-              ${spotlight.department}
-            </div>
-            <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.8}px; line-height: 1.4;">
-              ${spotlight.description}
-            </div>
-          </div>
-        </div>
-      `;
-    }
+        const DEPARTMENTS = ["General", "Admin", "History", "Navajo Language", "Math", "ELA", "Science", "Tech", "Special Ed", "PE", "Health", "Welding", "Sports", "Music", "Art"];
+        const COLLECTIONS = { ANNOUNCEMENTS: 'announcements', STUDENTS: 'students', TEACHERS: 'teachers', EVENTS: 'events', TICKER: 'ticker', SETTINGS: 'settings', MEDIA: 'media' };
 
-    function nextTeacherSpotlight() {
-      if (currentData.teacherSpotlights.length === 0) return;
-      const nextIndex = (currentTeacherSpotlightIndex + 1) % currentData.teacherSpotlights.length;
-      showTeacherSpotlight(nextIndex);
-    }
+        const els = {
+            schoolName: document.getElementById('header-school-name'),
+            schoolSubtitle: document.getElementById('header-subtitle'),
+            schoolSubtitle2: document.getElementById('header-subtitle-2'),
+            liveTime: document.getElementById('live-time'),
+            liveDate: document.getElementById('live-date'),
+            ticker: document.getElementById('ticker-content'),
+            studentCarousel: document.getElementById('student-carousel'),
+            studentProgress: document.getElementById('student-progress'),
+            teacherCarousel: document.getElementById('teacher-carousel'),
+            teacherProgress: document.getElementById('teacher-progress'),
+            announcementCarousel: document.getElementById('announcement-carousel'),
+            announcementProgress: document.getElementById('announcement-progress'),
+            mediaCarousel: document.getElementById('media-carousel'),
+            mediaProgress: document.getElementById('media-progress'),
+            eventsList: document.getElementById('events-list'),
+            weatherCity: document.getElementById('weather-city'),
+            weatherIcon: document.getElementById('weather-current-icon'),
+            weatherTemp: document.getElementById('weather-current-temp'),
+            weatherForecast: document.getElementById('weather-forecast'),
+            adminAnnouncements: document.getElementById('admin-announcements-list'),
+            adminStudents: document.getElementById('admin-students-list'),
+            adminTeachers: document.getElementById('admin-teachers-list'),
+            adminEvents: document.getElementById('admin-events-list'),
+            adminTicker: document.getElementById('admin-ticker-list'),
+            adminMedia: document.getElementById('admin-media-list'),
+            confName: document.getElementById('conf-name'),
+            confSubtitle: document.getElementById('conf-subtitle'),
+            confSubtitle2: document.getElementById('conf-subtitle-2'),
+            confLocation: document.getElementById('conf-location'),
+            confCalendar: document.getElementById('conf-calendar')
+        };
 
-    function previousTeacherSpotlight() {
-      if (currentData.teacherSpotlights.length === 0) return;
-      const prevIndex = currentTeacherSpotlightIndex === 0 ? currentData.teacherSpotlights.length - 1 : currentTeacherSpotlightIndex - 1;
-      showTeacherSpotlight(prevIndex);
-    }
-
-    function openAdmin() {
-      document.getElementById('admin-modal').style.display = 'flex';
-    }
-
-    function closeAdmin() {
-      document.getElementById('admin-modal').style.display = 'none';
-    }
-
-    function switchTab(tab) {
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-      
-      // Update tab buttons
-      ['announcements', 'ticker', 'events', 'student-spotlight', 'teacher-spotlight'].forEach(t => {
-        const btn = document.getElementById(`tab-${t}`);
-        if (btn) {
-          if (t === tab) {
-            btn.style.borderBottomColor = config.primary_color;
-            btn.style.color = config.primary_color;
-          } else {
-            btn.style.borderBottomColor = 'transparent';
-            btn.style.color = config.text_color;
-          }
+        // --- Authentication & Initialization ---
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (e) {
+                console.error("Auth failed", e);
+            }
         }
-      });
+        initAuth();
 
-      const content = document.getElementById('admin-content');
-      if (!content) return;
-
-      if (tab === 'announcements') {
-        content.innerHTML = `
-          <h3 style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.25}px; font-weight: bold; margin-bottom: 1rem;">
-            Manage Announcements
-          </h3>
-          <div style="margin-bottom: 1rem;">
-            <label for="ann-title" style="display: block; color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; font-weight: 600; margin-bottom: 0.5rem;">
-              Title
-            </label>
-            <input type="text" id="ann-title" placeholder="Announcement title" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px;">
-          </div>
-          <div style="margin-bottom: 1rem;">
-            <label for="ann-desc" style="display: block; color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; font-weight: 600; margin-bottom: 0.5rem;">
-              Description
-            </label>
-            <textarea id="ann-desc" placeholder="Announcement details" rows="3" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px;"></textarea>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-            <div>
-              <label for="ann-type" style="display: block; color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; font-weight: 600; margin-bottom: 0.5rem;">
-                Type
-              </label>
-              <select id="ann-type" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px;">
-                <option>General</option>
-                <option>Science</option>
-                <option>Tech</option>
-                <option>Sports</option>
-              </select>
-            </div>
-            <div>
-              <label for="ann-urgent" style="display: block; color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; font-weight: 600; margin-bottom: 0.5rem;">
-                Urgent
-              </label>
-              <label style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; cursor: pointer;">
-                <input type="checkbox" id="ann-urgent" style="width: 1.25rem; height: 1.25rem;">
-                <span style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px;">
-                  Mark as urgent
-                </span>
-              </label>
-            </div>
-          </div>
-          <button onclick="addAnnouncement()" style="background-color: ${config.primary_color}; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; border: none; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px; font-weight: 600; cursor: pointer;">
-            ➕ Add Announcement
-          </button>
-          
-          <div style="margin-top: 1.5rem;">
-            <h4 style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.1}px; font-weight: 600; margin-bottom: 0.75rem;">
-              Current Announcements
-            </h4>
-            <div id="ann-list"></div>
-          </div>
-        `;
-        renderAnnouncementList();
-      } else if (tab === 'ticker') {
-        content.innerHTML = `
-          <h3 style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.25}px; font-weight: bold; margin-bottom: 1rem;">
-            Manage Ticker Messages
-          </h3>
-          <div style="margin-bottom: 1rem;">
-            <label for="ticker-msg" style="display: block; color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; font-weight: 600; margin-bottom: 0.5rem;">
-              New Message
-            </label>
-            <input type="text" id="ticker-msg" placeholder="Enter ticker message" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px;">
-          </div>
-          <button onclick="addTicker()" style="background-color: ${config.primary_color}; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; border: none; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px; font-weight: 600; cursor: pointer;">
-            ➕ Add Message
-          </button>
-          
-          <div style="margin-top: 1.5rem;">
-            <h4 style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.1}px; font-weight: 600; margin-bottom: 0.75rem;">
-              Current Messages
-            </h4>
-            <div id="ticker-list"></div>
-          </div>
-        `;
-        renderTickerList();
-      } else if (tab === 'events') {
-        content.innerHTML = `
-          <h3 style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.25}px; font-weight: bold; margin-bottom: 1rem;">
-            Manage Events
-          </h3>
-          <div style="margin-bottom: 1rem;">
-            <label for="event-title" style="display: block; color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; font-weight: 600; margin-bottom: 0.5rem;">
-              Event Title
-            </label>
-            <input type="text" id="event-title" placeholder="Event name" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px;">
-          </div>
-          <div style="margin-bottom: 1rem;">
-            <label for="event-date" style="display: block; color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; font-weight: 600; margin-bottom: 0.5rem;">
-              Date & Time
-            </label>
-            <input type="text" id="event-date" placeholder="e.g., Tomorrow, 3:00 PM" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px;">
-          </div>
-          <div style="margin-bottom: 1rem;">
-            <label for="event-location" style="display: block; color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; font-weight: 600; margin-bottom: 0.5rem;">
-              Location
-            </label>
-            <input type="text" id="event-location" placeholder="Event location" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px;">
-          </div>
-          <button onclick="addEvent()" style="background-color: ${config.primary_color}; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; border: none; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px; font-weight: 600; cursor: pointer;">
-            ➕ Add Event
-          </button>
-          
-          <div style="margin-top: 1.5rem;">
-            <h4 style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.1}px; font-weight: 600; margin-bottom: 0.75rem;">
-              Current Events
-            </h4>
-            <div id="event-list"></div>
-          </div>
-        `;
-        renderEventList();
-      } else if (tab === 'student-spotlight') {
-        content.innerHTML = `
-          <h3 style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.25}px; font-weight: bold; margin-bottom: 1rem;">
-            Manage Student Spotlights
-          </h3>
-          <div style="margin-bottom: 1rem;">
-            <label for="student-title" style="display: block; color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; font-weight: 600; margin-bottom: 0.5rem;">
-              Spotlight Title
-            </label>
-            <input type="text" id="student-title" placeholder="e.g., Tech Spotlight" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px;">
-          </div>
-          <div style="margin-bottom: 1rem;">
-            <label for="student-desc" style="display: block; color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; font-weight: 600; margin-bottom: 0.5rem;">
-              Description
-            </label>
-            <textarea id="student-desc" placeholder="Student achievement details" rows="3" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px;"></textarea>
-          </div>
-          <button onclick="addStudentSpotlight()" style="background-color: ${config.primary_color}; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; border: none; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px; font-weight: 600; cursor: pointer;">
-            ➕ Add Student Spotlight
-          </button>
-          
-          <div style="margin-top: 1.5rem;">
-            <h4 style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.1}px; font-weight: 600; margin-bottom: 0.75rem;">
-              Current Student Spotlights
-            </h4>
-            <div id="student-spotlight-list"></div>
-          </div>
-        `;
-        renderStudentSpotlightList();
-      } else if (tab === 'teacher-spotlight') {
-        content.innerHTML = `
-          <h3 style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.25}px; font-weight: bold; margin-bottom: 1rem;">
-            Manage Teacher/Staff Spotlights
-          </h3>
-          <div style="margin-bottom: 1rem;">
-            <label for="teacher-name" style="display: block; color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; font-weight: 600; margin-bottom: 0.5rem;">
-              Name
-            </label>
-            <input type="text" id="teacher-name" placeholder="e.g., Ms. Sarah Johnson" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px;">
-          </div>
-          <div style="margin-bottom: 1rem;">
-            <label for="teacher-dept" style="display: block; color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; font-weight: 600; margin-bottom: 0.5rem;">
-              Department
-            </label>
-            <input type="text" id="teacher-dept" placeholder="e.g., Technology Department" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px;">
-          </div>
-          <div style="margin-bottom: 1rem;">
-            <label for="teacher-desc" style="display: block; color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.9}px; font-weight: 600; margin-bottom: 0.5rem;">
-              Description
-            </label>
-            <textarea id="teacher-desc" placeholder="Teacher/staff achievements and recognition" rows="3" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px;"></textarea>
-          </div>
-          <button onclick="addTeacherSpotlight()" style="background-color: ${config.primary_color}; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; border: none; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px; font-weight: 600; cursor: pointer;">
-            ➕ Add Teacher Spotlight
-          </button>
-          
-          <div style="margin-top: 1.5rem;">
-            <h4 style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 1.1}px; font-weight: 600; margin-bottom: 0.75rem;">
-              Current Teacher Spotlights
-            </h4>
-            <div id="teacher-spotlight-list"></div>
-          </div>
-        `;
-        renderTeacherSpotlightList();
-      }
-    }
-
-    function renderAnnouncementList() {
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-      const list = document.getElementById('ann-list');
-      if (!list) return;
-
-      list.innerHTML = currentData.announcements.map((ann, index) => `
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background-color: #f9fafb; border-radius: 0.5rem; margin-bottom: 0.5rem;">
-          <div style="flex: 1;">
-            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-              <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px; font-weight: 600;">
-                ${ann.title}
-              </div>
-              ${ann.urgent ? '<span style="background-color: #dc2626; color: white; padding: 0.125rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 600;">URGENT</span>' : ''}
-            </div>
-            <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.85}px; opacity: 0.75;">
-              ${ann.description}
-            </div>
-          </div>
-          <button onclick="deleteAnnouncement(${index})" style="color: #dc2626; background: none; border: none; cursor: pointer; padding: 0.5rem; font-size: 1.25rem;" title="Delete">
-            🗑️
-          </button>
-        </div>
-      `).join('');
-    }
-
-    function renderTickerList() {
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-      const list = document.getElementById('ticker-list');
-      if (!list) return;
-
-      list.innerHTML = currentData.ticker.map((msg, index) => `
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background-color: #f9fafb; border-radius: 0.5rem; margin-bottom: 0.5rem;">
-          <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px;">
-            ${msg}
-          </div>
-          <button onclick="deleteTicker(${index})" style="color: #dc2626; background: none; border: none; cursor: pointer; padding: 0.5rem; font-size: 1.25rem;" title="Delete">
-            🗑️
-          </button>
-        </div>
-      `).join('');
-    }
-
-    function addAnnouncement() {
-      const title = document.getElementById('ann-title').value;
-      const description = document.getElementById('ann-desc').value;
-      const type = document.getElementById('ann-type').value;
-      const urgent = document.getElementById('ann-urgent').checked;
-
-      if (title && description) {
-        currentData.announcements.push({
-          id: Date.now().toString(),
-          title,
-          description,
-          type,
-          urgent
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                console.log("Connected as User:", user.uid);
+                setupListeners();
+            }
         });
 
-        document.getElementById('ann-title').value = '';
-        document.getElementById('ann-desc').value = '';
-        document.getElementById('ann-type').value = 'General';
-        document.getElementById('ann-urgent').checked = false;
-
-        const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-        currentAnnouncementIndex = 0;
-        render(config);
-        openAdmin();
-        switchTab('announcements');
-      }
-    }
-
-    function deleteAnnouncement(index) {
-      currentData.announcements.splice(index, 1);
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-      currentAnnouncementIndex = 0;
-      render(config);
-      openAdmin();
-      switchTab('announcements');
-    }
-
-    function addTicker() {
-      const msg = document.getElementById('ticker-msg').value;
-
-      if (msg.trim()) {
-        currentData.ticker.push(msg);
-        document.getElementById('ticker-msg').value = '';
-
-        const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-        render(config);
-        openAdmin();
-        switchTab('ticker');
-      }
-    }
-
-    function deleteTicker(index) {
-      currentData.ticker.splice(index, 1);
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-      render(config);
-      openAdmin();
-      switchTab('ticker');
-    }
-
-    function renderEventList() {
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-      const list = document.getElementById('event-list');
-      if (!list) return;
-
-      list.innerHTML = currentData.events.map((event, index) => `
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background-color: #f9fafb; border-radius: 0.5rem; margin-bottom: 0.5rem; border-left: 4px solid ${config.primary_color};">
-          <div style="flex: 1;">
-            <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px; font-weight: 600; margin-bottom: 0.25rem;">
-              ${event.title}
-            </div>
-            <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.85}px; opacity: 0.75;">
-              📅 ${event.date} • 📍 ${event.location}
-            </div>
-          </div>
-          <button onclick="deleteEvent(${index})" style="color: #dc2626; background: none; border: none; cursor: pointer; padding: 0.5rem; font-size: 1.25rem;" title="Delete">
-            🗑️
-          </button>
-        </div>
-      `).join('');
-    }
-
-    function addEvent() {
-      const title = document.getElementById('event-title').value;
-      const date = document.getElementById('event-date').value;
-      const location = document.getElementById('event-location').value;
-
-      if (title && date && location) {
-        currentData.events.push({
-          id: Date.now().toString(),
-          title,
-          date,
-          location
-        });
-
-        document.getElementById('event-title').value = '';
-        document.getElementById('event-date').value = '';
-        document.getElementById('event-location').value = '';
-
-        const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-        render(config);
-        openAdmin();
-        switchTab('events');
-      }
-    }
-
-    function deleteEvent(index) {
-      currentData.events.splice(index, 1);
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-      render(config);
-      openAdmin();
-      switchTab('events');
-    }
-
-    function renderStudentSpotlightList() {
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-      const list = document.getElementById('student-spotlight-list');
-      if (!list) return;
-
-      list.innerHTML = currentData.studentSpotlights.map((spotlight, index) => `
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background-color: #f9fafb; border-radius: 0.5rem; margin-bottom: 0.5rem;">
-          <div style="flex: 1;">
-            <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px; font-weight: 600; margin-bottom: 0.25rem;">
-              ${spotlight.title}
-            </div>
-            <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.85}px; opacity: 0.75;">
-              ${spotlight.description}
-            </div>
-          </div>
-          <button onclick="deleteStudentSpotlight(${index})" style="color: #dc2626; background: none; border: none; cursor: pointer; padding: 0.5rem; font-size: 1.25rem;" title="Delete">
-            🗑️
-          </button>
-        </div>
-      `).join('');
-    }
-
-    function renderTeacherSpotlightList() {
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-      const list = document.getElementById('teacher-spotlight-list');
-      if (!list) return;
-
-      list.innerHTML = currentData.teacherSpotlights.map((spotlight, index) => `
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background-color: #f9fafb; border-radius: 0.5rem; margin-bottom: 0.5rem;">
-          <div style="flex: 1;">
-            <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size}px; font-weight: 600; margin-bottom: 0.25rem;">
-              ${spotlight.name} - ${spotlight.department}
-            </div>
-            <div style="color: ${config.text_color}; font-family: ${config.font_family}, sans-serif; font-size: ${config.font_size * 0.85}px; opacity: 0.75;">
-              ${spotlight.description}
-            </div>
-          </div>
-          <button onclick="deleteTeacherSpotlight(${index})" style="color: #dc2626; background: none; border: none; cursor: pointer; padding: 0.5rem; font-size: 1.25rem;" title="Delete">
-            🗑️
-          </button>
-        </div>
-      `).join('');
-    }
-
-    function addStudentSpotlight() {
-      const title = document.getElementById('student-title').value;
-      const description = document.getElementById('student-desc').value;
-
-      if (title && description) {
-        currentData.studentSpotlights.push({
-          id: Date.now().toString(),
-          title,
-          description
-        });
-
-        document.getElementById('student-title').value = '';
-        document.getElementById('student-desc').value = '';
-
-        const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-        currentStudentSpotlightIndex = 0;
-        render(config);
-        openAdmin();
-        switchTab('student-spotlight');
-      }
-    }
-
-    function deleteStudentSpotlight(index) {
-      currentData.studentSpotlights.splice(index, 1);
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-      currentStudentSpotlightIndex = 0;
-      render(config);
-      openAdmin();
-      switchTab('student-spotlight');
-    }
-
-    function addTeacherSpotlight() {
-      const name = document.getElementById('teacher-name').value;
-      const department = document.getElementById('teacher-dept').value;
-      const description = document.getElementById('teacher-desc').value;
-
-      if (name && department && description) {
-        currentData.teacherSpotlights.push({
-          id: Date.now().toString(),
-          name,
-          department,
-          description
-        });
-
-        document.getElementById('teacher-name').value = '';
-        document.getElementById('teacher-dept').value = '';
-        document.getElementById('teacher-desc').value = '';
-
-        const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-        currentTeacherSpotlightIndex = 0;
-        render(config);
-        openAdmin();
-        switchTab('teacher-spotlight');
-      }
-    }
-
-    function deleteTeacherSpotlight(index) {
-      currentData.teacherSpotlights.splice(index, 1);
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-      currentTeacherSpotlightIndex = 0;
-      render(config);
-      openAdmin();
-      switchTab('teacher-spotlight');
-    }
-
-    async function onConfigChange(config) {
-      render(config);
-    }
-
-    function mapToCapabilities(config) {
-      return {
-        recolorables: [
-          {
-            get: () => config.background_color || defaultConfig.background_color,
-            set: (value) => {
-              config.background_color = value;
-              window.elementSdk.setConfig({ background_color: value });
-            }
-          },
-          {
-            get: () => config.surface_color || defaultConfig.surface_color,
-            set: (value) => {
-              config.surface_color = value;
-              window.elementSdk.setConfig({ surface_color: value });
-            }
-          },
-          {
-            get: () => config.primary_color || defaultConfig.primary_color,
-            set: (value) => {
-              config.primary_color = value;
-              window.elementSdk.setConfig({ primary_color: value });
-            }
-          },
-          {
-            get: () => config.accent_color || defaultConfig.accent_color,
-            set: (value) => {
-              config.accent_color = value;
-              window.elementSdk.setConfig({ accent_color: value });
-            }
-          },
-          {
-            get: () => config.text_color || defaultConfig.text_color,
-            set: (value) => {
-              config.text_color = value;
-              window.elementSdk.setConfig({ text_color: value });
-            }
-          }
-        ],
-        borderables: [],
-        fontEditable: {
-          get: () => config.font_family || defaultConfig.font_family,
-          set: (value) => {
-            config.font_family = value;
-            window.elementSdk.setConfig({ font_family: value });
-          }
-        },
-        fontSizeable: {
-          get: () => config.font_size || defaultConfig.font_size,
-          set: (value) => {
-            config.font_size = value;
-            window.elementSdk.setConfig({ font_size: value });
-          }
+        // --- Missing Functions Implementation ---
+        function startClock() {
+            const update = () => {
+                const now = new Date();
+                els.liveTime.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                els.liveDate.innerText = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+            };
+            update();
+            setInterval(update, 1000);
         }
-      };
-    }
+        startClock();
 
-    function mapToEditPanelValues(config) {
-      return new Map([
-        ['school_name', config.school_name || defaultConfig.school_name],
-        ['school_subtitle', config.school_subtitle || defaultConfig.school_subtitle],
-        ['location', config.location || defaultConfig.location],
-        ['spotlight_title', config.spotlight_title || defaultConfig.spotlight_title],
-        ['teacher_spotlight_title', config.teacher_spotlight_title || defaultConfig.teacher_spotlight_title],
-        ['announcements_title', config.announcements_title || defaultConfig.announcements_title],
-        ['events_title', config.events_title || defaultConfig.events_title]
-      ]);
-    }
+        let weatherInterval;
+        async function fetchWeather(location) {
+            if (!location) {
+                els.weatherCity.innerText = "NO LOCATION";
+                return;
+            }
+            els.weatherCity.innerText = location;
+            
+            // Simple Open-Meteo Integration
+            // 1. Geocoding (Simulated for common places or using a simple heuristic)
+            // For this demo, we will use coordinates for Navajo, NM as default if lookup fails
+            // Navajo, NM: 35.8973, -109.0289
+            let lat = 35.8973;
+            let lon = -109.0289;
 
-    if (window.elementSdk) {
-      window.elementSdk.init({
-        defaultConfig,
-        onConfigChange,
-        mapToCapabilities,
-        mapToEditPanelValues
-      });
-    }
+            // Very basic "Geocoding" for demo purposes. 
+            // In a real production app, use Google Maps Geocoding API or OpenStreetMap Nominatim.
+            if (location.toLowerCase().includes('gallup')) { lat = 35.5281; lon = -108.7426; }
+            if (location.toLowerCase().includes('window rock')) { lat = 35.6731; lon = -109.0556; }
+            if (location.toLowerCase().includes('albuquerque')) { lat = 35.0844; lon = -106.6504; }
 
-    // Initial render
-    render(defaultConfig);
-  </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9afa4191b4d31f2d',t:'MTc2NjAxNDcyOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&temperature_unit=fahrenheit&timezone=auto`;
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if (data.current_weather) {
+                    els.weatherTemp.innerText = `${Math.round(data.current_weather.temperature)}°`;
+                    
+                    // Weather Codes to Icons
+                    const code = data.current_weather.weathercode;
+                    let icon = 'fa-sun';
+                    if (code > 2) icon = 'fa-cloud-sun';
+                    if (code > 45) icon = 'fa-smog';
+                    if (code > 50) icon = 'fa-cloud-rain';
+                    if (code > 70) icon = 'fa-snowflake';
+                    if (code > 90) icon = 'fa-bolt';
+                    
+                    els.weatherIcon.innerHTML = `<i class="fas ${icon}"></i>`;
+                }
+
+                if (data.daily) {
+                    let forecastHtml = '';
+                    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                    for(let i=1; i<=3; i++) {
+                        const d = new Date(data.daily.time[i]);
+                        const dayName = days[d.getDay()];
+                        const max = Math.round(data.daily.temperature_2m_max[i]);
+                        const min = Math.round(data.daily.temperature_2m_min[i]);
+                        forecastHtml += `
+                            <div class="flex flex-col">
+                                <span class="font-bold text-school-gold">${dayName}</span>
+                                <span>${max}°/${min}°</span>
+                            </div>
+                        `;
+                    }
+                    els.weatherForecast.innerHTML = forecastHtml;
+                }
+
+            } catch (e) {
+                console.error("Weather Fetch Error", e);
+                els.weatherCity.innerText = "Weather Unavail";
+            }
+        }
+
+        async function fetchCalendar(icalUrl) {
+            // CORS restrictions prevent direct fetching of iCal files from Google in the browser.
+            // In a real app, this requires a backend proxy.
+            // For this demo, we will acknowledge the URL but not fail.
+            if(icalUrl && icalUrl.length > 10) {
+               console.log("Calendar URL set:", icalUrl);
+               // If we could fetch:
+               // const res = await fetch(icalUrl);
+               // const text = await res.text();
+               // parseICal(text);
+               
+               // Mocking external events for demo when URL is present
+               appData.externalEvents = [
+                   { title: "School Board Mtg", datetime: new Date(Date.now() + 86400000).toISOString().split('T')[0], location: "Admin" },
+                   { title: "Early Release", datetime: new Date(Date.now() + 172800000).toISOString().split('T')[0], location: "Campus" }
+               ];
+               mergeAndRenderEvents();
+            } else {
+                appData.externalEvents = [];
+                mergeAndRenderEvents();
+            }
+        }
+
+        // --- Auth Functions ---
+        window.handleAdminClick = () => {
+            document.getElementById('admin-modal').classList.remove('hidden');
+        };
+
+        // --- Firebase Listeners ---
+        function getCollectionRef(colName) {
+            return collection(db, 'artifacts', appId, 'public', 'data', colName);
+        }
+
+        function setupListeners() {
+            if(window.listenersActive) return;
+            window.listenersActive = true;
+
+            const listen = (colName, callback) => {
+                onSnapshot(getCollectionRef(colName), (snapshot) => {
+                    const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    callback(data);
+                }, (error) => console.error(`Error listening to ${colName}:`, error));
+            };
+
+            listen(COLLECTIONS.ANNOUNCEMENTS, (data) => {
+                appData.announcements = data;
+                renderCarousel('announcement', data);
+                renderAdminList('announcements', data);
+            });
+
+            listen(COLLECTIONS.STUDENTS, (data) => {
+                appData.students = data;
+                renderCarousel('student', data);
+                renderAdminList('students', data);
+            });
+
+            listen(COLLECTIONS.TEACHERS, (data) => {
+                appData.teachers = data;
+                renderCarousel('teacher', data);
+                renderAdminList('teachers', data);
+            });
+
+            listen(COLLECTIONS.EVENTS, (data) => {
+                appData.events = data;
+                mergeAndRenderEvents();
+                renderAdminList('events', data);
+            });
+
+            listen(COLLECTIONS.TICKER, (data) => {
+                if (data.length > 0) {
+                    appData.ticker = data;
+                    const combinedText = data.map(item => item.text).join(' &nbsp; <span class="text-school-navy/50 mx-2">●</span> &nbsp; ');
+                    els.ticker.innerHTML = combinedText;
+                } else {
+                     els.ticker.innerHTML = "Welcome to School Board";
+                }
+                renderAdminList('ticker', data);
+            });
+
+            listen(COLLECTIONS.SETTINGS, (data) => {
+                if (data.length > 0) {
+                    appData.settings = data[0];
+                    appData.settingsId = data[0].id;
+                    updateUIConfig(data[0]);
+                } else {
+                    // Create default settings if they don't exist
+                    if(currentUser) {
+                        const defaults = {
+                            schoolName: "Navajo Pine HS",
+                            subtitle: "School of Technology",
+                            subtitle2: "<b><i>Home of the Tech Warriors (Tó éí Tech Naalʼánígíí Kéyah)</i></b>",
+                            location: "Navajo, NM",
+                            googleCalendar: ""
+                        };
+                        addDoc(getCollectionRef(COLLECTIONS.SETTINGS), defaults);
+                    }
+                }
+            });
+
+            listen(COLLECTIONS.MEDIA, (data) => {
+                appData.media = data;
+                renderCarousel('media', data);
+                renderAdminList('media', data);
+            });
+        }
+
+        // --- Core Logic ---
+        function updateUIConfig(settings) {
+            if(settings.schoolName) els.schoolName.innerHTML = settings.schoolName;
+            if(settings.subtitle) els.schoolSubtitle.innerHTML = settings.subtitle;
+            if(settings.subtitle2) els.schoolSubtitle2.innerHTML = settings.subtitle2;
+            if(settings.logo) {
+                document.getElementById('header-logo').src = settings.logo;
+            }
+            els.confName.value = settings.schoolName || "";
+            els.confSubtitle.value = settings.subtitle || "";
+            els.confSubtitle2.value = settings.subtitle2 || "";
+            els.confLocation.value = settings.location || "";
+            els.confCalendar.value = settings.googleCalendar || "";
+            
+            // Call API functions
+            fetchWeather(settings.location);
+            fetchCalendar(settings.googleCalendar);
+        }
+
+        function mergeAndRenderEvents() {
+            const all = [...appData.events, ...appData.externalEvents];
+            // Sort by date
+            all.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+            
+            // Filter past events (keep today + future)
+            const now = new Date();
+            now.setHours(0,0,0,0);
+            const upcoming = all.filter(e => new Date(e.datetime) >= now);
+
+            if (upcoming.length === 0) {
+                els.eventsList.innerHTML = `<p class="text-center text-gray-400 mt-4">No Upcoming Events</p>`;
+                return;
+            }
+
+            els.eventsList.innerHTML = upcoming.map(e => {
+                const d = new Date(e.datetime);
+                const month = d.toLocaleDateString([], {month:'short'});
+                const day = d.toLocaleDateString([], {day:'numeric'});
+                return `
+                <div class="flex items-center bg-white p-3 rounded-lg shadow-sm mb-3 border-l-4 border-school-navy">
+                    <div class="flex-none w-12 text-center">
+                        <div class="text-xs font-bold text-gray-500 uppercase">${month}</div>
+                        <div class="text-xl font-bold text-school-navy leading-none">${day}</div>
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="font-bold text-sm text-gray-800 leading-tight">${e.title}</h4>
+                        <p class="text-xs text-gray-500">${e.location || 'TBA'}</p>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // Carousel Logic
+        const carousels = {
+            student: { index: 0, timer: null, interval: 8000 },
+            teacher: { index: 0, timer: null, interval: 10000 },
+            announcement: { index: 0, timer: null, interval: 12000 },
+            media: { index: 0, timer: null, interval: 15000 }
+        };
+
+        function extractYouTubeID(url) {
+            let videoId = '';
+            try {
+                const u = new URL(url);
+                if (u.hostname.includes('youtube.com')) {
+                    if (u.searchParams.has('v')) videoId = u.searchParams.get('v');
+                    else if (u.pathname.includes('/shorts/')) videoId = u.pathname.split('/shorts/')[1];
+                    else if (u.pathname.includes('/embed/')) videoId = u.pathname.split('/embed/')[1];
+                } else if (u.hostname.includes('youtu.be')) {
+                    videoId = u.pathname.slice(1);
+                }
+            } catch(e) {}
+            return videoId ? videoId.split('?')[0].split('&')[0] : null;
+        }
+
+        function renderCarousel(type, data) {
+            const container = els[`${type}Carousel`];
+            const progressBar = els[`${type}Progress`];
+            const config = carousels[type];
+
+            if (config.timer) { clearTimeout(config.timer); clearInterval(config.timer); }
+            if (type === 'media' && window.currentMediaPlayer) { try { window.currentMediaPlayer.destroy(); } catch(e){} window.currentMediaPlayer = null; }
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div class="w-full h-full flex items-center justify-center text-center text-gray-400">No content available</div>`;
+                return;
+            }
+            if (config.index >= data.length) config.index = 0;
+
+            const showSlide = () => {
+                if (progressBar) { progressBar.style.transition = 'none'; progressBar.style.width = '0%'; }
+                const item = data[config.index];
+                container.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center opacity-0 transition-opacity duration-500 relative" id="${type}-slide-content"></div>`;
+                const slide = document.getElementById(`${type}-slide-content`);
+                
+                const queueNext = (delay) => {
+                    if (progressBar) { setTimeout(() => { progressBar.style.transition = `width ${delay}ms linear`; progressBar.style.width = '100%'; }, 50); }
+                    config.timer = setTimeout(() => { config.index = (config.index + 1) % data.length; showSlide(); }, delay);
+                };
+
+                if (type === 'media' && item.type === 'youtube') {
+                    slide.classList.remove('opacity-0'); 
+                    let videoId = extractYouTubeID(item.content);
+                    if (videoId && ytApiReady) {
+                        const playerId = `yt-player-${Date.now()}`;
+                        slide.innerHTML = `<div id="${playerId}" style="width:100%; height:100%;"></div>`;
+                        
+                        const origin = window.location.protocol.startsWith('http') ? window.location.origin : undefined;
+
+                        window.currentMediaPlayer = new YT.Player(playerId, {
+                            height: '100%', width: '100%', videoId: videoId,
+                            playerVars: { 
+                                'autoplay': 1, 
+                                'controls': 0, 
+                                'rel': 0, 
+                                'showinfo': 0, 
+                                'modestbranding': 1, 
+                                'mute': 0, 
+                                'origin': origin, 
+                                'enablejsapi': 1 
+                            },
+                            events: {
+                                'onReady': (event) => { event.target.playVideo(); },
+                                'onStateChange': (event) => { if (event.data === 0) { config.index = (config.index + 1) % data.length; showSlide(); } },
+                                'onError': (e) => { 
+                                    console.warn("Skipping restricted/unavailable video."); 
+                                    slide.innerHTML = `<div class="flex items-center justify-center h-full text-white bg-black"><p>Video Unavailable</p></div>`; 
+                                    queueNext(3000); 
+                                }
+                            }
+                        });
+                        config.timer = setTimeout(() => { config.index = (config.index + 1) % data.length; showSlide(); }, 600000); 
+                    } else {
+                        slide.innerHTML = `<p class="text-red-500">Video Loading...</p>`;
+                        if (!ytApiReady) setTimeout(showSlide, 1000); else queueNext(5000);
+                    }
+                } else if (type === 'media' && item.type === 'facebook') {
+                    slide.innerHTML = item.content.includes('<iframe') ? item.content : `<div class="flex items-center justify-center h-full text-red-500 font-bold">Invalid Embed Code</div>`;
+                    const fbFrame = slide.querySelector('iframe');
+                    if (fbFrame) { fbFrame.style.width = '100%'; fbFrame.style.height = '100%'; }
+                    setTimeout(() => slide.classList.remove('opacity-0'), 50);
+                    queueNext(config.interval);
+                } else {
+                    // Standard content
+                    if (type === 'media' && item.type === 'image') {
+                         slide.innerHTML = `<img src="${item.content}" class="w-full h-full object-cover">`;
+                    } else if (type === 'student') {
+                        slide.innerHTML = `
+                            <div class="relative w-32 h-32 md:w-48 md:h-48 rounded-full border-4 border-school-gold overflow-hidden shadow-lg mb-4">
+                                <img src="${item.image || 'https://placehold.co/200?text=Student'}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200?text=No+Img'">
+                            </div>
+                            <h3 class="text-2xl font-bold text-school-navy mb-1">${item.name}</h3>
+                            <span class="bg-school-gold text-school-navy px-3 py-1 rounded-full text-sm font-bold mb-3">${item.focus || 'Student'}</span>
+                            <p class="text-center text-gray-600 italic line-clamp-3 px-4">"${item.description}"</p>
+                        `;
+                    } else if (type === 'teacher') {
+                        slide.innerHTML = `
+                            <div class="flex flex-row items-center space-x-6 w-full px-4">
+                                <div class="w-1/3 flex justify-end">
+                                    <div class="w-32 h-32 rounded-full border-4 border-school-navy overflow-hidden shadow-lg">
+                                        <img src="${item.image || 'https://placehold.co/200?text=Staff'}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200?text=No+Img'">
+                                    </div>
+                                </div>
+                                <div class="w-2/3 text-left">
+                                    <h3 class="text-2xl font-bold text-gray-800">${item.name}</h3>
+                                    <div class="text-school-navy font-bold uppercase tracking-wide text-sm mb-2">${item.dept}</div>
+                                    <p class="text-gray-600 text-sm line-clamp-4 border-l-4 border-school-gold pl-3">${item.bio}</p>
+                                </div>
+                            </div>
+                        `;
+                    } else if (type === 'announcement') {
+                        const isImg = item.image && item.image.length > 50; 
+                        slide.innerHTML = `
+                            <div class="flex flex-col items-center justify-center h-full w-full">
+                                ${isImg ? 
+                                    `<img src="${item.image}" class="max-h-32 rounded-lg shadow-sm mb-4 object-contain">` : 
+                                    `<div class="mb-4 text-school-gold"><i class="fas fa-bullhorn fa-3x"></i></div>`
+                                }
+                                <h3 class="text-2xl md:text-3xl font-bold text-center text-school-navy mb-2 leading-tight">${item.title}</h3>
+                                <div class="h-1 w-20 bg-school-gold mb-3"></div>
+                                <p class="text-center text-gray-700 text-lg md:text-xl line-clamp-4 px-6">${item.description}</p>
+                                ${item.urgent ? '<span class="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-bl-lg uppercase animate-pulse">Urgent</span>' : ''}
+                            </div>
+                        `;
+                    }
+                    setTimeout(() => slide.classList.remove('opacity-0'), 50);
+                    queueNext(config.interval);
+                }
+            };
+            showSlide();
+        }
+
+        // --- Admin Interface ---
+        window.formatText = (identifier, tag) => {
+            let textarea = document.querySelector(`textarea[name="${identifier}"]`);
+            if (!textarea) textarea = document.getElementById(identifier);
+            if (!textarea) return;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            textarea.value = text.substring(0, start) + `<${tag}>` + text.substring(start, end) + `</${tag}>` + text.substring(end);
+            textarea.focus();
+        };
+
+        window.toggleAdminModal = () => { document.getElementById('admin-modal').classList.toggle('hidden'); };
+
+        window.switchTab = (tabId) => {
+            document.querySelectorAll('.admin-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.admin-tab-btn').forEach(el => {
+                el.classList.remove('bg-white', 'shadow-sm', 'border-l-4', 'border-school-navy', 'text-school-navy');
+                el.classList.add('border-transparent');
+            });
+            document.getElementById(tabId).classList.remove('hidden');
+            const btn = Array.from(document.querySelectorAll('.admin-tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+            if(btn) {
+                btn.classList.add('bg-white', 'shadow-sm', 'border-l-4', 'border-school-navy', 'text-school-navy');
+                btn.classList.remove('border-transparent');
+            }
+        };
+
+        window.saveConfig = async () => {
+            showLoader();
+            try {
+                const logoFile = document.getElementById('conf-logo-file').files[0];
+                let logoBase64 = appData.settings?.logo || "";
+                if (logoFile) { try { logoBase64 = await convertBase64(logoFile); } catch (err) { console.error(err); } }
+                const conf = {
+                    schoolName: els.confName.value,
+                    subtitle: els.confSubtitle.value,
+                    subtitle2: els.confSubtitle2.value,
+                    location: els.confLocation.value,
+                    googleCalendar: els.confCalendar.value,
+                    logo: logoBase64
+                };
+                if (appData.settingsId) await updateDoc(doc(getCollectionRef(COLLECTIONS.SETTINGS), appData.settingsId), conf);
+                else await addDoc(getCollectionRef(COLLECTIONS.SETTINGS), conf);
+            } catch(e) { console.error(e); }
+            hideLoader();
+        };
+
+        function showLoader() { document.getElementById('global-loader').classList.remove('hidden'); }
+        function hideLoader() { document.getElementById('global-loader').classList.add('hidden'); }
+
+        function renderAdminList(type, data) {
+            const container = els[`admin${type.charAt(0).toUpperCase() + type.slice(1)}`];
+            if (!container) return;
+            if (data.length === 0) { container.innerHTML = `<p class="text-gray-500 italic col-span-3">No items found.</p>`; return; }
+            container.innerHTML = data.map(item => {
+                let mainText = item.title || item.name || item.text;
+                let subText = item.description || item.dept || item.datetime || '';
+                let img = item.image;
+                if (type === 'ticker') { const tmp = document.createElement("DIV"); tmp.innerHTML = mainText; mainText = tmp.textContent || tmp.innerText || ""; subText = "Ticker Message"; } 
+                else if (type === 'media') { mainText = item.type.toUpperCase() + ' Media'; subText = item.content ? item.content.substring(0, 40) + '...' : 'No Content'; if (item.type === 'image') img = item.content; }
+                return `
+                <div class="bg-white p-4 rounded-lg shadow border border-gray-200 flex justify-between items-start group">
+                    <div class="flex items-start space-x-3 overflow-hidden">
+                        ${img ? `<img src="${img}" class="w-10 h-10 rounded-full object-cover border">` : ''}
+                        <div class="min-w-0"><h4 class="font-bold text-gray-800 truncate text-sm">${mainText}</h4><p class="text-xs text-gray-500 truncate">${subText || ''}</p></div>
+                    </div>
+                    <div class="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="editEntry('${type}', '${item.id}')" class="text-blue-600 hover:text-blue-800"><i class="fas fa-edit"></i></button>
+                        <button onclick="deleteEntry('${type}', '${item.id}')" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        let currentEditType = null;
+        let currentEditId = null;
+
+        window.openEntryModal = (type) => {
+            currentEditType = type;
+            currentEditId = null;
+            document.getElementById('entry-modal-title').innerText = `Add ${type.charAt(0).toUpperCase() + type.slice(1, type.endsWith('s') ? -1 : undefined)}`; 
+            document.getElementById('entry-form').reset();
+            generateFormFields(type, null);
+            document.getElementById('entry-modal').classList.remove('hidden');
+        };
+
+        window.editEntry = (type, id) => {
+            currentEditType = type;
+            currentEditId = id;
+            const item = appData[type].find(i => i.id === id);
+            if (!item) return;
+            document.getElementById('entry-modal-title').innerText = `Edit ${type.charAt(0).toUpperCase() + type.slice(1, type.endsWith('s') ? -1 : undefined)}`;
+            generateFormFields(type, item);
+            document.getElementById('entry-modal').classList.remove('hidden');
+        };
+
+        window.closeEntryModal = () => { document.getElementById('entry-modal').classList.add('hidden'); };
+
+        window.deleteEntry = async (type, id) => {
+            if(!confirm("Are you sure?")) return;
+            showLoader();
+            try { await deleteDoc(doc(getCollectionRef(type), id)); } catch(e) { console.error(e); }
+            hideLoader();
+        };
+
+        window.handleEntrySubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            if (currentEditType === 'announcements') data.urgent = formData.get('urgent') === 'on';
+            const fileInput = document.getElementById('form-image-file');
+            if (fileInput && fileInput.files.length > 0) {
+                try { data.image = await convertBase64(fileInput.files[0]); } catch(err) { console.error("Image error"); }
+            } else if (!data.image && currentEditId) {
+                 const oldItem = appData[currentEditType].find(i => i.id === currentEditId);
+                 if(oldItem && oldItem.image) data.image = oldItem.image;
+            }
+            if (data.image && data.image.includes('drive.google.com')) {
+                const idMatch = data.image.match(/[-\w]{25,}/);
+                if(idMatch) data.image = `https://lh3.googleusercontent.com/d/${idMatch[0]}`;
+            }
+            showLoader();
+            try {
+                if (currentEditId) await updateDoc(doc(getCollectionRef(currentEditType), currentEditId), data);
+                else await addDoc(getCollectionRef(currentEditType), data);
+                closeEntryModal();
+            } catch(err) { console.error(err); alert("Error saving."); }
+            hideLoader();
+        };
+
+        function generateFormFields(type, values) {
+            const container = document.getElementById('entry-fields');
+            let html = '';
+            const v = values || {};
+            const toolbar = (fieldName) => `
+                <div class="space-x-1 flex items-center">
+                    <button type="button" onclick="formatText('${fieldName}', 'b')" class="px-2 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs font-bold" title="Bold">B</button>
+                    <button type="button" onclick="formatText('${fieldName}', 'i')" class="px-2 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs italic" title="Italic">I</button>
+                </div>
+            `;
+            
+            if (type === 'announcements') {
+                html += `
+                    <div><label class="block text-sm font-bold mb-1">Title</label><input name="title" required value="${v.title || ''}" class="w-full p-2 border rounded"></div>
+                    <div><div class="flex justify-between items-center mb-1"><div class="flex items-center"><label class="block text-sm font-bold mr-2">Description</label></div>${toolbar('description')}</div><textarea name="description" required rows="3" class="w-full p-2 border rounded">${v.description || ''}</textarea></div>
+                    <div class="flex items-center mt-2"><input type="checkbox" name="urgent" ${v.urgent ? 'checked' : ''} class="h-4 w-4"><label class="ml-2 text-sm font-bold text-red-600">Mark as Urgent</label></div>
+                `;
+            } else if (type === 'students') {
+                html += `
+                    <div><label class="block text-sm font-bold mb-1">Student Name</label><input name="name" required value="${v.name || ''}" class="w-full p-2 border rounded"></div>
+                    <div><label class="block text-sm font-bold mb-1">Focus Area</label><input name="focus" placeholder="e.g. Science, Basketball" value="${v.focus || ''}" class="w-full p-2 border rounded"></div>
+                    <div><div class="flex justify-between items-center mb-1"><div class="flex items-center"><label class="block text-sm font-bold mr-2">Quote / Description</label></div>${toolbar('description')}</div><textarea name="description" required rows="3" class="w-full p-2 border rounded">${v.description || ''}</textarea></div>
+                `;
+            } else if (type === 'teachers') {
+                html += `
+                    <div><label class="block text-sm font-bold mb-1">Name</label><input name="name" required value="${v.name || ''}" class="w-full p-2 border rounded"></div>
+                    <div><label class="block text-sm font-bold mb-1">Department</label><select name="dept" class="w-full p-2 border rounded">${DEPARTMENTS.map(d => `<option value="${d}" ${v.dept === d ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
+                    <div><div class="flex justify-between items-center mb-1"><div class="flex items-center"><label class="block text-sm font-bold mr-2">Bio</label></div>${toolbar('bio')}</div><textarea name="bio" required rows="3" class="w-full p-2 border rounded">${v.bio || ''}</textarea></div>
+                `;
+            } else if (type === 'events') {
+                html += `
+                    <div><label class="block text-sm font-bold mb-1">Event Title</label><input name="title" required value="${v.title || ''}" class="w-full p-2 border rounded"></div>
+                    <div><label class="block text-sm font-bold mb-1">Date</label><input type="date" name="datetime" required value="${v.datetime || ''}" class="w-full p-2 border rounded"></div>
+                    <div><label class="block text-sm font-bold mb-1">Location</label><input name="location" value="${v.location || ''}" class="w-full p-2 border rounded"></div>
+                `;
+            } else if (type === 'ticker') {
+                html += `<div><div class="flex justify-between items-center mb-1"><div class="flex items-center"><label class="block text-sm font-bold mr-2">Message</label></div></div><textarea name="text" required rows="3" class="w-full p-2 border rounded">${v.text || ''}</textarea></div>`;
+            } else if (type === 'media') {
+                html += `
+                    <div><label class="block text-sm font-bold mb-1">Media Type</label><select name="type" class="w-full p-2 border rounded">
+                        <option value="youtube" ${v.type === 'youtube' ? 'selected' : ''}>YouTube Video</option>
+                        <option value="facebook" ${v.type === 'facebook' ? 'selected' : ''}>Facebook Embed Code</option>
+                        <option value="image" ${v.type === 'image' ? 'selected' : ''}>Image URL</option>
+                    </select></div>
+                    <div><label class="block text-sm font-bold mb-1">Content (URL or Code)</label><textarea name="content" required rows="3" class="w-full p-2 border rounded font-mono text-xs" placeholder="Paste URL or Code here...">${v.content || ''}</textarea></div>
+                `;
+            }
+            if (type !== 'events' && type !== 'ticker' && type !== 'media') {
+                html += `
+                    <div class="border-t pt-4 mt-2">
+                        <label class="block text-sm font-bold mb-1">Image (URL or Upload)</label>
+                        <input name="image" placeholder="https://..." value="${v.image && v.image.startsWith('http') ? v.image : ''}" class="w-full p-2 border rounded mb-2 text-sm">
+                        <input type="file" id="form-image-file" accept="image/*" class="text-sm">
+                        <p class="text-xs text-gray-500 mt-1">Upload converts to Base64 (Max 1MB). URLs preferred.</p>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        const convertBase64 = (file) => {
+            return new Promise((resolve, reject) => {
+                const fileReader = new FileReader();
+                fileReader.readAsDataURL(file);
+                fileReader.onload = () => resolve(fileReader.result);
+                fileReader.onerror = (error) => reject(error);
+            });
+        };
+    </script>
+</body>
 </html>
