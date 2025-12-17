@@ -1,7 +1,8 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, setDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+// !!! UPDATED: Changed version from 11.6.1 to 10.12.2 to fix loading error !!!
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, setDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // Inject YouTube IFrame API
 let ytApiReady = false;
@@ -75,7 +76,6 @@ async function initAuth() {
         try {
             await signInAnonymously(auth); 
         } catch (e) {
-            // Silently fail if anonymous auth is disabled; user is just a guest
             console.log("Guest login not enabled. Viewing as public.");
         }
     }
@@ -94,6 +94,7 @@ startClock();
 
 // --- Auth Functions (Attached to Window) ---
 window.handleAdminClick = () => {
+    // Check if user is logged in AND not anonymous (meaning they are a real admin)
     if (currentUser && !currentUser.isAnonymous) {
         document.getElementById('admin-modal').classList.remove('hidden');
     } else {
@@ -118,7 +119,7 @@ window.handleLogin = async (e) => {
         errorMsg.classList.add('hidden');
     } catch (error) {
         console.error(error);
-        errorMsg.innerText = "Login failed: " + error.message;
+        errorMsg.innerText = "Login failed: " + error.code;
     }
 };
 
@@ -271,7 +272,6 @@ function renderCarousel(type, data) {
                 const playerId = `yt-player-${Date.now()}`;
                 slide.innerHTML = `<div id="${playerId}" style="width:100%; height:100%;"></div>`;
                 
-                // Safe origin check to avoid protocol errors
                 const origin = window.location.protocol.startsWith('http') ? window.location.origin : undefined;
 
                 window.currentMediaPlayer = new YT.Player(playerId, {
@@ -283,14 +283,13 @@ function renderCarousel(type, data) {
                         'showinfo': 0, 
                         'modestbranding': 1, 
                         'mute': 0, 
-                        'origin': origin, // Only send origin if HTTP/HTTPS
+                        'origin': origin, 
                         'enablejsapi': 1 
                     },
                     events: {
                         'onReady': (event) => { event.target.playVideo(); },
                         'onStateChange': (event) => { if (event.data === 0) { config.index = (config.index + 1) % data.length; showSlide(); } },
                         'onError': (e) => { 
-                            // Suppress console spam for restricted videos
                             console.warn("Skipping restricted/unavailable video."); 
                             slide.innerHTML = `<div class="flex items-center justify-center h-full text-white bg-black"><p>Video Unavailable</p></div>`; 
                             queueNext(3000); 
@@ -356,131 +355,6 @@ function renderCarousel(type, data) {
         }
     };
     showSlide();
-}
-
-// --- Weather & Calendar ---
-async function fetchWeather(location) {
-     if (!location) return;
-     try {
-        const q = encodeURIComponent(location);
-        let geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1&language=en&format=json`);
-        let geoData = await geoRes.json();
-        if (!geoData.results && location.includes(',')) {
-            const city = location.split(',')[0].trim();
-            geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`);
-            geoData = await geoRes.json();
-        }
-        if (!geoData.results) { els.weatherCity.innerText = "Loc not found"; return; }
-        const { latitude, longitude, name, admin1 } = geoData.results[0];
-        els.weatherCity.innerText = `${name}, ${admin1 || ''}`;
-        const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&temperature_unit=fahrenheit`);
-        const wData = await wRes.json();
-        els.weatherTemp.innerText = Math.round(wData.current.temperature_2m) + "°F";
-        els.weatherIcon.innerHTML = getWeatherIcon(wData.current.weather_code);
-        let forecastHTML = '';
-        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        for(let i=0; i<3; i++) {
-            const date = new Date(wData.daily.time[i]);
-            const dayName = i === 0 ? 'Today' : days[date.getDay()];
-            const max = Math.round(wData.daily.temperature_2m_max[i]);
-            const min = Math.round(wData.daily.temperature_2m_min[i]);
-            const code = wData.daily.weather_code[i];
-            forecastHTML += `<div class="flex flex-col items-center"><span class="font-bold text-gray-200">${dayName}</span><span class="text-lg my-1">${getWeatherIcon(code)}</span><span class="text-xs font-semibold">${max}°/${min}°</span></div>`;
-        }
-        els.weatherForecast.innerHTML = forecastHTML;
-    } catch (e) { console.error("Weather error", e); els.weatherCity.innerText = "Weather Unavailable"; }
-}
-
-function getWeatherIcon(code) {
-    if (code <= 1) return '<i class="fas fa-sun text-yellow-400"></i>';
-    if (code <= 3) return '<i class="fas fa-cloud-sun text-gray-300"></i>';
-    if (code <= 48) return '<i class="fas fa-smog text-gray-400"></i>';
-    if (code <= 67) return '<i class="fas fa-cloud-rain text-blue-400"></i>';
-    if (code <= 77) return '<i class="fas fa-snowflake text-white"></i>';
-    if (code <= 82) return '<i class="fas fa-cloud-showers-heavy text-blue-500"></i>';
-    if (code <= 99) return '<i class="fas fa-bolt text-yellow-500"></i>';
-    return '<i class="fas fa-cloud"></i>';
-}
-
-async function fetchCalendar(url) {
-    if (!url || !url.startsWith('http')) { appData.externalEvents = []; mergeAndRenderEvents(); return; }
-    try {
-        const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
-        if (!res.ok) throw new Error('Proxy error');
-        const icsData = await res.text();
-        appData.externalEvents = parseICS(icsData);
-        mergeAndRenderEvents();
-    } catch (e) {
-        console.warn("Primary calendar proxy failed, trying fallback...", e);
-        try {
-             const res2 = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-             const data2 = await res2.json();
-             if (data2.contents) { appData.externalEvents = parseICS(data2.contents); mergeAndRenderEvents(); }
-        } catch (err2) { console.error("All calendar fetches failed", err2); }
-    }
-}
-
-function parseICS(icsData) {
-    const events = [];
-    const lines = icsData.split(/\r\n|\n|\r/);
-    let inEvent = false;
-    let currentEvent = {};
-    const parseICSDate = (val) => {
-        if(!val) return null;
-        const year = val.substring(0,4);
-        const month = val.substring(4,6);
-        const day = val.substring(6,8);
-        return `${year}-${month}-${day}`;
-    };
-    for (let line of lines) {
-        if (line.startsWith('BEGIN:VEVENT')) { inEvent = true; currentEvent = {}; } 
-        else if (line.startsWith('END:VEVENT')) {
-            inEvent = false;
-            if (currentEvent.start) {
-                const evtDate = new Date(currentEvent.start);
-                const today = new Date();
-                today.setHours(0,0,0,0);
-                if (evtDate >= today) events.push(currentEvent);
-            }
-        } else if (inEvent) {
-            const parts = line.split(':');
-            const key = parts[0].split(';')[0];
-            const val = parts.slice(1).join(':');
-            if (key === 'DTSTART') currentEvent.start = parseICSDate(val);
-            if (key === 'SUMMARY') currentEvent.title = val;
-            if (key === 'LOCATION') currentEvent.location = val.replace(/\\,/g, ',');
-        }
-    }
-    return events;
-}
-
-function mergeAndRenderEvents() {
-    const allEvents = [
-        ...appData.events.map(e => ({ ...e, source: 'manual', dateObj: new Date(e.datetime) })),
-        ...appData.externalEvents.map(e => ({ ...e, source: 'google', dateObj: new Date(e.start), datetime: e.start }))
-    ];
-    allEvents.sort((a, b) => a.dateObj - b.dateObj);
-    const displayEvents = allEvents.slice(0, 10);
-    if (displayEvents.length === 0) { els.eventsList.innerHTML = `<div class="text-center text-gray-500 mt-4">No upcoming events.</div>`; return; }
-    els.eventsList.innerHTML = displayEvents.map(e => {
-        const date = new Date(e.datetime); 
-        const month = date.toLocaleString('default', { month: 'short' });
-        const day = date.getDate();
-        const isGoogle = e.source === 'google';
-        const borderColor = isGoogle ? 'border-green-500' : 'border-school-gold';
-        return `
-        <div class="flex items-center bg-gray-50 p-3 rounded-lg border-l-4 ${borderColor} shadow-sm hover:bg-gray-100 transition-colors">
-            <div class="flex-none w-12 h-12 bg-white rounded-lg border border-gray-200 flex flex-col items-center justify-center mr-3 shadow-sm">
-                <span class="text-xs font-bold text-gray-500 uppercase">${month}</span>
-                <span class="text-xl font-bold text-school-navy leading-none">${day}</span>
-            </div>
-            <div class="flex-grow min-w-0">
-                <h4 class="font-bold text-gray-800 truncate">${e.title}</h4>
-                <p class="text-xs text-gray-500 truncate"><i class="fas fa-map-marker-alt mr-1"></i> ${e.location || 'TBA'} ${isGoogle ? '(Google Cal)' : ''}</p>
-            </div>
-        </div>
-        `;
-    }).join('');
 }
 
 // --- Admin Interface ---
