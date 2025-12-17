@@ -1,8 +1,0 @@
-const firebaseConfig = {
-  apiKey: "AIzaSyAtawxqfPOZqKJZcClKBVXSClC3IsIuDtM",
-  authDomain: "digital-bulletin-board-6c660.firebaseapp.com",
-  projectId: "digital-bulletin-board-6c660",
-  storageBucket: "digital-bulletin-board-6c660.firebasestorage.app",
-  messagingSenderId: "1051324595132",
-  appId: "1:1051324595132:web:bb95ce7acc65d9e80d49b9",
-  measurementId: "G-6VW2SKC09Z"
