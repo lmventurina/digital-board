@@ -1,8 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-// Changed to include signInWithEmailAndPassword and signOut
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, setDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Inject YouTube IFrame API
 let ytApiReady = false;
@@ -71,23 +70,37 @@ const els = {
 };
 
 // --- Authentication & Initialization ---
+async function initAuth() {
+    // If not already logged in (as guest or admin), try anonymous guest login
+    // This allows public read access if rules allow it
+    if (!auth.currentUser) {
+        try {
+            // Note: If you enabled Email/Password ONLY, this line might fail. 
+            // Guests need Anonymous auth enabled in console, OR purely public read rules.
+            // For now, we try anonymous. If it fails, they are just unauthenticated guests.
+            await signInAnonymously(auth); 
+        } catch (e) {
+            console.log("Guest login failed or disabled. Viewing as public unauthenticated.", e);
+        }
+    }
+}
+initAuth();
+
 onAuthStateChanged(auth, (user) => {
     currentUser = user;
-    if (user) {
+    if (user && !user.isAnonymous) {
         console.log("Admin Logged In:", user.email);
     } else {
-        console.log("Viewing as Guest");
+        console.log("Viewing as Guest/Public");
     }
-    // Always load listeners so guests can see the board
     setupListeners();
 });
 
-// Start clock immediately
 startClock();
 
-// --- Auth Functions ---
+// --- Auth Functions (Attached to Window) ---
 window.handleAdminClick = () => {
-    if (currentUser) {
+    if (currentUser && !currentUser.isAnonymous) {
         document.getElementById('admin-modal').classList.remove('hidden');
     } else {
         document.getElementById('login-modal').classList.remove('hidden');
@@ -111,7 +124,7 @@ window.handleLogin = async (e) => {
         errorMsg.classList.add('hidden');
     } catch (error) {
         console.error(error);
-        errorMsg.innerText = "Login failed: " + error.code;
+        errorMsg.innerText = "Login failed: " + error.message;
     }
 };
 
@@ -119,6 +132,8 @@ window.handleLogout = async () => {
     try {
         await signOut(auth);
         document.getElementById('admin-modal').classList.add('hidden');
+        // Re-init guest mode
+        initAuth();
         alert("Logged out successfully.");
     } catch (error) {
         console.error(error);
@@ -131,7 +146,6 @@ function getCollectionRef(colName) {
 }
 
 function setupListeners() {
-    // Only set up if not already running (simplified check)
     if(window.listenersActive) return;
     window.listenersActive = true;
 
@@ -182,18 +196,6 @@ function setupListeners() {
             appData.settings = data[0];
             appData.settingsId = data[0].id;
             updateUIConfig(data[0]);
-        } else {
-            // Guests can't create default docs, so check auth before writing default
-            if(currentUser) {
-                const defaults = {
-                    schoolName: "Navajo Pine HS",
-                    subtitle: "School of Technology",
-                    subtitle2: "<b><i>Home of the Tech Warriors (Tó éí Tech Naalʼánígíí Kéyah)</i></b>",
-                    location: "Navajo, NM",
-                    googleCalendar: ""
-                };
-                addDoc(getCollectionRef(COLLECTIONS.SETTINGS), defaults);
-            }
         }
     });
 
@@ -211,8 +213,6 @@ function updateUIConfig(settings) {
     if(settings.subtitle2) els.schoolSubtitle2.innerHTML = settings.subtitle2;
     if(settings.logo) {
         document.getElementById('header-logo').src = settings.logo;
-        const preview = document.getElementById('conf-logo-preview');
-        if(preview) preview.src = settings.logo;
     }
     els.confName.value = settings.schoolName || "";
     els.confSubtitle.value = settings.subtitle || "";
