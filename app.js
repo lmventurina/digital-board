@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, setDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Inject YouTube IFrame API
 let ytApiReady = false;
@@ -71,16 +71,12 @@ const els = {
 
 // --- Authentication & Initialization ---
 async function initAuth() {
-    // If not already logged in (as guest or admin), try anonymous guest login
-    // This allows public read access if rules allow it
     if (!auth.currentUser) {
         try {
-            // Note: If you enabled Email/Password ONLY, this line might fail. 
-            // Guests need Anonymous auth enabled in console, OR purely public read rules.
-            // For now, we try anonymous. If it fails, they are just unauthenticated guests.
             await signInAnonymously(auth); 
         } catch (e) {
-            console.log("Guest login failed or disabled. Viewing as public unauthenticated.", e);
+            // Silently fail if anonymous auth is disabled; user is just a guest
+            console.log("Guest login not enabled. Viewing as public.");
         }
     }
 }
@@ -90,8 +86,6 @@ onAuthStateChanged(auth, (user) => {
     currentUser = user;
     if (user && !user.isAnonymous) {
         console.log("Admin Logged In:", user.email);
-    } else {
-        console.log("Viewing as Guest/Public");
     }
     setupListeners();
 });
@@ -132,7 +126,6 @@ window.handleLogout = async () => {
     try {
         await signOut(auth);
         document.getElementById('admin-modal').classList.add('hidden');
-        // Re-init guest mode
         initAuth();
         alert("Logged out successfully.");
     } catch (error) {
@@ -277,13 +270,31 @@ function renderCarousel(type, data) {
             if (videoId && ytApiReady) {
                 const playerId = `yt-player-${Date.now()}`;
                 slide.innerHTML = `<div id="${playerId}" style="width:100%; height:100%;"></div>`;
+                
+                // Safe origin check to avoid protocol errors
+                const origin = window.location.protocol.startsWith('http') ? window.location.origin : undefined;
+
                 window.currentMediaPlayer = new YT.Player(playerId, {
                     height: '100%', width: '100%', videoId: videoId,
-                    playerVars: { 'autoplay': 1, 'controls': 0, 'rel': 0, 'showinfo': 0, 'modestbranding': 1, 'mute': 0, 'origin': window.location.origin, 'enablejsapi': 1 },
+                    playerVars: { 
+                        'autoplay': 1, 
+                        'controls': 0, 
+                        'rel': 0, 
+                        'showinfo': 0, 
+                        'modestbranding': 1, 
+                        'mute': 0, 
+                        'origin': origin, // Only send origin if HTTP/HTTPS
+                        'enablejsapi': 1 
+                    },
                     events: {
                         'onReady': (event) => { event.target.playVideo(); },
                         'onStateChange': (event) => { if (event.data === 0) { config.index = (config.index + 1) % data.length; showSlide(); } },
-                        'onError': (e) => { console.error("YT Error", e); slide.innerHTML = `<div class="flex items-center justify-center h-full text-white bg-black"><p>Video Unavailable</p></div>`; queueNext(3000); }
+                        'onError': (e) => { 
+                            // Suppress console spam for restricted videos
+                            console.warn("Skipping restricted/unavailable video."); 
+                            slide.innerHTML = `<div class="flex items-center justify-center h-full text-white bg-black"><p>Video Unavailable</p></div>`; 
+                            queueNext(3000); 
+                        }
                     }
                 });
                 config.timer = setTimeout(() => { config.index = (config.index + 1) % data.length; showSlide(); }, 600000); 
