@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+// Changed to include signInWithEmailAndPassword and signOut
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, setDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Inject YouTube IFrame API
@@ -22,52 +23,20 @@ const firebaseConfig = {
     measurementId: "G-6VW2SKC09Z"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// Initialize Analytics safely
 let analytics;
-try {
-    analytics = getAnalytics(app);
-} catch (e) {
-    console.warn("Analytics failed to initialize. Continuing without it.", e);
-}
+try { analytics = getAnalytics(app); } catch (e) { console.warn("Analytics skipped", e); }
 
 const auth = getAuth(app);
 const db = getFirestore(app);
-
 const appId = 'navajo-pine-hs-v1'; 
 
 let currentUser = null;
-let appData = {
-    announcements: [],
-    students: [],
-    teachers: [],
-    events: [],
-    externalEvents: [],
-    ticker: "",
-    settings: {},
-    media: [] 
-};
+let appData = { announcements: [], students: [], teachers: [], events: [], externalEvents: [], ticker: "", settings: {}, media: [] };
 
-// --- Constants & Departments ---
-const DEPARTMENTS = [
-    "General", "Admin", "History", "Navajo Language", "Math", 
-    "ELA", "Science", "Tech", "Special Ed", "PE", "Health", 
-    "Welding", "Sports", "Music", "Art"
-];
+const DEPARTMENTS = ["General", "Admin", "History", "Navajo Language", "Math", "ELA", "Science", "Tech", "Special Ed", "PE", "Health", "Welding", "Sports", "Music", "Art"];
+const COLLECTIONS = { ANNOUNCEMENTS: 'announcements', STUDENTS: 'students', TEACHERS: 'teachers', EVENTS: 'events', TICKER: 'ticker', SETTINGS: 'settings', MEDIA: 'media' };
 
-const COLLECTIONS = {
-    ANNOUNCEMENTS: 'announcements',
-    STUDENTS: 'students',
-    TEACHERS: 'teachers',
-    EVENTS: 'events',
-    TICKER: 'ticker',
-    SETTINGS: 'settings',
-    MEDIA: 'media'
-};
-
-// --- DOM Elements ---
 const els = {
     schoolName: document.getElementById('header-school-name'),
     schoolSubtitle: document.getElementById('header-subtitle'),
@@ -75,37 +44,25 @@ const els = {
     liveTime: document.getElementById('live-time'),
     liveDate: document.getElementById('live-date'),
     ticker: document.getElementById('ticker-content'),
-    
-    // Carousels
     studentCarousel: document.getElementById('student-carousel'),
     studentProgress: document.getElementById('student-progress'),
     teacherCarousel: document.getElementById('teacher-carousel'),
     teacherProgress: document.getElementById('teacher-progress'),
     announcementCarousel: document.getElementById('announcement-carousel'),
     announcementProgress: document.getElementById('announcement-progress'),
-    
-    // Media Carousel
     mediaCarousel: document.getElementById('media-carousel'),
     mediaProgress: document.getElementById('media-progress'),
-    
-    // Lists
     eventsList: document.getElementById('events-list'),
-    
-    // Weather
     weatherCity: document.getElementById('weather-city'),
     weatherIcon: document.getElementById('weather-current-icon'),
     weatherTemp: document.getElementById('weather-current-temp'),
     weatherForecast: document.getElementById('weather-forecast'),
-
-    // Admin Lists
     adminAnnouncements: document.getElementById('admin-announcements-list'),
     adminStudents: document.getElementById('admin-students-list'),
     adminTeachers: document.getElementById('admin-teachers-list'),
     adminEvents: document.getElementById('admin-events-list'),
     adminTicker: document.getElementById('admin-ticker-list'),
     adminMedia: document.getElementById('admin-media-list'),
-    
-    // Config Inputs
     confName: document.getElementById('conf-name'),
     confSubtitle: document.getElementById('conf-subtitle'),
     confSubtitle2: document.getElementById('conf-subtitle-2'),
@@ -113,41 +70,60 @@ const els = {
     confCalendar: document.getElementById('conf-calendar')
 };
 
-// --- Initialization ---
-async function initAuth() {
-    // Check for file protocol causing errors
-    if (window.location.protocol === 'file:') {
-        alert("CRITICAL ERROR: You are running this file directly from your computer (file://). This prevents the app from working.\n\nPlease upload this index.html to Netlify Drop or Firebase Hosting to use it.");
-        return;
-    }
-
-    try {
-        // No custom token needed for public deployment
-        await signInAnonymously(auth);
-    } catch(e) {
-        console.error("Auth Failed", e);
-        // Diagnostic alert for the user
-        if (e.code === 'auth/operation-not-allowed') {
-            alert("SETUP ERROR: Anonymous Authentication is disabled.\n\nGo to Firebase Console -> Build -> Authentication -> Sign-in method -> Enable 'Anonymous'.");
-        } else if (e.code === 'auth/configuration-not-found') {
-            alert("SETUP ERROR: Firebase config is invalid. Check your API Keys.");
-        } else if (e.code === 'auth/unauthorized-domain') {
-            alert("DOMAIN ERROR: Firebase blocked this URL.\n\nGo to Firebase Console -> Build -> Authentication -> Settings -> Authorized Domains -> Add Domain (add your Netlify URL there).");
-        } else {
-            alert("Connection Error: " + e.message);
-        }
-    }
-}
-
-initAuth();
-
+// --- Authentication & Initialization ---
 onAuthStateChanged(auth, (user) => {
+    currentUser = user;
     if (user) {
-        currentUser = user;
-        setupListeners();
-        startClock();
+        console.log("Admin Logged In:", user.email);
+    } else {
+        console.log("Viewing as Guest");
     }
+    // Always load listeners so guests can see the board
+    setupListeners();
 });
+
+// Start clock immediately
+startClock();
+
+// --- Auth Functions ---
+window.handleAdminClick = () => {
+    if (currentUser) {
+        document.getElementById('admin-modal').classList.remove('hidden');
+    } else {
+        document.getElementById('login-modal').classList.remove('hidden');
+    }
+};
+
+window.handleLogin = async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const errorMsg = document.getElementById('login-error');
+    
+    errorMsg.innerText = "Signing in...";
+    errorMsg.classList.remove('hidden');
+    
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        document.getElementById('login-modal').classList.add('hidden');
+        document.getElementById('admin-modal').classList.remove('hidden');
+        document.getElementById('login-form').reset();
+        errorMsg.classList.add('hidden');
+    } catch (error) {
+        console.error(error);
+        errorMsg.innerText = "Login failed: " + error.code;
+    }
+};
+
+window.handleLogout = async () => {
+    try {
+        await signOut(auth);
+        document.getElementById('admin-modal').classList.add('hidden');
+        alert("Logged out successfully.");
+    } catch (error) {
+        console.error(error);
+    }
+};
 
 // --- Firebase Listeners ---
 function getCollectionRef(colName) {
@@ -155,7 +131,10 @@ function getCollectionRef(colName) {
 }
 
 function setupListeners() {
-    // Generic listener builder
+    // Only set up if not already running (simplified check)
+    if(window.listenersActive) return;
+    window.listenersActive = true;
+
     const listen = (colName, callback) => {
         onSnapshot(getCollectionRef(colName), (snapshot) => {
             const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -204,14 +183,17 @@ function setupListeners() {
             appData.settingsId = data[0].id;
             updateUIConfig(data[0]);
         } else {
-            const defaults = {
-                schoolName: "Navajo Pine HS",
-                subtitle: "School of Technology",
-                subtitle2: "<b><i>Home of the Tech Warriors (Tó éí Tech Naalʼánígíí Kéyah)</i></b>",
-                location: "Navajo, NM",
-                googleCalendar: ""
-            };
-            addDoc(getCollectionRef(COLLECTIONS.SETTINGS), defaults);
+            // Guests can't create default docs, so check auth before writing default
+            if(currentUser) {
+                const defaults = {
+                    schoolName: "Navajo Pine HS",
+                    subtitle: "School of Technology",
+                    subtitle2: "<b><i>Home of the Tech Warriors (Tó éí Tech Naalʼánígíí Kéyah)</i></b>",
+                    location: "Navajo, NM",
+                    googleCalendar: ""
+                };
+                addDoc(getCollectionRef(COLLECTIONS.SETTINGS), defaults);
+            }
         }
     });
 
@@ -222,9 +204,7 @@ function setupListeners() {
     });
 }
 
-// --- Core Logic: Rendering ---
-
-// Config UI Update
+// --- Core Logic ---
 function updateUIConfig(settings) {
     if(settings.schoolName) els.schoolName.innerHTML = settings.schoolName;
     if(settings.subtitle) els.schoolSubtitle.innerHTML = settings.subtitle;
@@ -234,15 +214,11 @@ function updateUIConfig(settings) {
         const preview = document.getElementById('conf-logo-preview');
         if(preview) preview.src = settings.logo;
     }
-    
-    // Update Admin Inputs
     els.confName.value = settings.schoolName || "";
     els.confSubtitle.value = settings.subtitle || "";
     els.confSubtitle2.value = settings.subtitle2 || "";
     els.confLocation.value = settings.location || "";
     els.confCalendar.value = settings.googleCalendar || "";
-
-    // Trigger fetches if changed
     fetchWeather(settings.location);
     fetchCalendar(settings.googleCalendar);
 }
@@ -255,7 +231,6 @@ const carousels = {
     media: { index: 0, timer: null, interval: 15000 }
 };
 
-// Extract YouTube ID Helper
 function extractYouTubeID(url) {
     let videoId = '';
     try {
@@ -276,124 +251,54 @@ function renderCarousel(type, data) {
     const progressBar = els[`${type}Progress`];
     const config = carousels[type];
 
-    // Clear existing timer/interval
-    if (config.timer) {
-        clearTimeout(config.timer);
-        clearInterval(config.timer);
-    }
-    
-    // Clean up any old YouTube players if switching contexts
-    if (type === 'media' && window.currentMediaPlayer) {
-        try { window.currentMediaPlayer.destroy(); } catch(e){}
-        window.currentMediaPlayer = null;
-    }
+    if (config.timer) { clearTimeout(config.timer); clearInterval(config.timer); }
+    if (type === 'media' && window.currentMediaPlayer) { try { window.currentMediaPlayer.destroy(); } catch(e){} window.currentMediaPlayer = null; }
 
     if (!data || data.length === 0) {
         container.innerHTML = `<div class="w-full h-full flex items-center justify-center text-center text-gray-400">No content available</div>`;
         return;
     }
-
-    // Ensure index is valid
     if (config.index >= data.length) config.index = 0;
 
     const showSlide = () => {
-        // 1. Reset Progress
-        if (progressBar) {
-            progressBar.style.transition = 'none';
-            progressBar.style.width = '0%';
-        }
-
-        // 2. Get Item
+        if (progressBar) { progressBar.style.transition = 'none'; progressBar.style.width = '0%'; }
         const item = data[config.index];
-        
-        // 3. Render Wrapper
         container.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center opacity-0 transition-opacity duration-500 relative" id="${type}-slide-content"></div>`;
         const slide = document.getElementById(`${type}-slide-content`);
         
-        // Helper to trigger next
         const queueNext = (delay) => {
-            // Animate Bar
-            if (progressBar) {
-                // Small delay to allow transition reset
-                setTimeout(() => {
-                    progressBar.style.transition = `width ${delay}ms linear`;
-                    progressBar.style.width = '100%';
-                }, 50);
-            }
-            config.timer = setTimeout(() => {
-                config.index = (config.index + 1) % data.length;
-                showSlide();
-            }, delay);
+            if (progressBar) { setTimeout(() => { progressBar.style.transition = `width ${delay}ms linear`; progressBar.style.width = '100%'; }, 50); }
+            config.timer = setTimeout(() => { config.index = (config.index + 1) % data.length; showSlide(); }, delay);
         };
 
-        // Logic per type
         if (type === 'media' && item.type === 'youtube') {
-            // YOUTUBE LOGIC
-            slide.classList.remove('opacity-0'); // Show immediately to prevent black flash
+            slide.classList.remove('opacity-0'); 
             let videoId = extractYouTubeID(item.content);
-            
             if (videoId && ytApiReady) {
-                // Create a div ID for the player
                 const playerId = `yt-player-${Date.now()}`;
                 slide.innerHTML = `<div id="${playerId}" style="width:100%; height:100%;"></div>`;
-                
                 window.currentMediaPlayer = new YT.Player(playerId, {
-                    height: '100%',
-                    width: '100%',
-                    videoId: videoId,
-                    playerVars: {
-                        'autoplay': 1,
-                        'controls': 0,
-                        'rel': 0,
-                        'showinfo': 0,
-                        'modestbranding': 1,
-                        'mute': 0, 
-                        'origin': window.location.origin, 
-                        'enablejsapi': 1
-                    },
+                    height: '100%', width: '100%', videoId: videoId,
+                    playerVars: { 'autoplay': 1, 'controls': 0, 'rel': 0, 'showinfo': 0, 'modestbranding': 1, 'mute': 0, 'origin': window.location.origin, 'enablejsapi': 1 },
                     events: {
-                        'onReady': (event) => {
-                            event.target.playVideo();
-                        },
-                        'onStateChange': (event) => {
-                            if (event.data === 0) {
-                                config.index = (config.index + 1) % data.length;
-                                showSlide();
-                            }
-                        },
-                        'onError': (e) => {
-                            console.error("YT Error", e);
-                            // Handle restricted video error (150/101/153)
-                            // Force skip immediately
-                            slide.innerHTML = `<div class="flex items-center justify-center h-full text-white bg-black"><p>Video Unavailable (Err ${e.data})</p></div>`;
-                            queueNext(3000); 
-                        }
+                        'onReady': (event) => { event.target.playVideo(); },
+                        'onStateChange': (event) => { if (event.data === 0) { config.index = (config.index + 1) % data.length; showSlide(); } },
+                        'onError': (e) => { console.error("YT Error", e); slide.innerHTML = `<div class="flex items-center justify-center h-full text-white bg-black"><p>Video Unavailable</p></div>`; queueNext(3000); }
                     }
                 });
-                // Fallback safety timer (10 mins) just in case end event misses
-                config.timer = setTimeout(() => {
-                     config.index = (config.index + 1) % data.length;
-                     showSlide();
-                }, 600000); 
-
+                config.timer = setTimeout(() => { config.index = (config.index + 1) % data.length; showSlide(); }, 600000); 
             } else {
-                // API not ready or invalid ID, fallback to standard iframe or skip
                 slide.innerHTML = `<p class="text-red-500">Video Loading...</p>`;
-                // Retry quickly if API not ready, else skip
-                if (!ytApiReady) setTimeout(showSlide, 1000); 
-                else queueNext(5000);
+                if (!ytApiReady) setTimeout(showSlide, 1000); else queueNext(5000);
             }
-
         } else if (type === 'media' && item.type === 'facebook') {
             slide.innerHTML = item.content.includes('<iframe') ? item.content : `<div class="flex items-center justify-center h-full text-red-500 font-bold">Invalid Embed Code</div>`;
-            // Ensure iframe fills container
             const fbFrame = slide.querySelector('iframe');
             if (fbFrame) { fbFrame.style.width = '100%'; fbFrame.style.height = '100%'; }
             setTimeout(() => slide.classList.remove('opacity-0'), 50);
             queueNext(config.interval);
-
         } else {
-            // STANDARD / IMAGE LOGIC
+            // Standard content
             if (type === 'media' && item.type === 'image') {
                  slide.innerHTML = `<img src="${item.content}" class="w-full h-full object-cover">`;
             } else if (type === 'student') {
@@ -435,15 +340,10 @@ function renderCarousel(type, data) {
                     </div>
                 `;
             }
-
-            // Trigger Fade In
             setTimeout(() => slide.classList.remove('opacity-0'), 50);
-            
-            // Queue Next
             queueNext(config.interval);
         }
     };
-
     showSlide();
 }
 
@@ -459,10 +359,7 @@ async function fetchWeather(location) {
             geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`);
             geoData = await geoRes.json();
         }
-        if (!geoData.results) {
-            els.weatherCity.innerText = "Loc not found";
-            return;
-        }
+        if (!geoData.results) { els.weatherCity.innerText = "Loc not found"; return; }
         const { latitude, longitude, name, admin1 } = geoData.results[0];
         els.weatherCity.innerText = `${name}, ${admin1 || ''}`;
         const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&temperature_unit=fahrenheit`);
@@ -477,19 +374,10 @@ async function fetchWeather(location) {
             const max = Math.round(wData.daily.temperature_2m_max[i]);
             const min = Math.round(wData.daily.temperature_2m_min[i]);
             const code = wData.daily.weather_code[i];
-            forecastHTML += `
-                <div class="flex flex-col items-center">
-                    <span class="font-bold text-gray-200">${dayName}</span>
-                    <span class="text-lg my-1">${getWeatherIcon(code)}</span>
-                    <span class="text-xs font-semibold">${max}°/${min}°</span>
-                </div>
-            `;
+            forecastHTML += `<div class="flex flex-col items-center"><span class="font-bold text-gray-200">${dayName}</span><span class="text-lg my-1">${getWeatherIcon(code)}</span><span class="text-xs font-semibold">${max}°/${min}°</span></div>`;
         }
         els.weatherForecast.innerHTML = forecastHTML;
-    } catch (e) {
-        console.error("Weather error", e);
-        els.weatherCity.innerText = "Weather Unavailable";
-    }
+    } catch (e) { console.error("Weather error", e); els.weatherCity.innerText = "Weather Unavailable"; }
 }
 
 function getWeatherIcon(code) {
@@ -504,11 +392,7 @@ function getWeatherIcon(code) {
 }
 
 async function fetchCalendar(url) {
-    if (!url || !url.startsWith('http')) {
-        appData.externalEvents = [];
-        mergeAndRenderEvents();
-        return;
-    }
+    if (!url || !url.startsWith('http')) { appData.externalEvents = []; mergeAndRenderEvents(); return; }
     try {
         const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
         if (!res.ok) throw new Error('Proxy error');
@@ -520,10 +404,7 @@ async function fetchCalendar(url) {
         try {
              const res2 = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
              const data2 = await res2.json();
-             if (data2.contents) {
-                appData.externalEvents = parseICS(data2.contents);
-                mergeAndRenderEvents();
-             }
+             if (data2.contents) { appData.externalEvents = parseICS(data2.contents); mergeAndRenderEvents(); }
         } catch (err2) { console.error("All calendar fetches failed", err2); }
     }
 }
@@ -541,10 +422,8 @@ function parseICS(icsData) {
         return `${year}-${month}-${day}`;
     };
     for (let line of lines) {
-        if (line.startsWith('BEGIN:VEVENT')) {
-            inEvent = true;
-            currentEvent = {};
-        } else if (line.startsWith('END:VEVENT')) {
+        if (line.startsWith('BEGIN:VEVENT')) { inEvent = true; currentEvent = {}; } 
+        else if (line.startsWith('END:VEVENT')) {
             inEvent = false;
             if (currentEvent.start) {
                 const evtDate = new Date(currentEvent.start);
@@ -571,10 +450,7 @@ function mergeAndRenderEvents() {
     ];
     allEvents.sort((a, b) => a.dateObj - b.dateObj);
     const displayEvents = allEvents.slice(0, 10);
-    if (displayEvents.length === 0) {
-        els.eventsList.innerHTML = `<div class="text-center text-gray-500 mt-4">No upcoming events.</div>`;
-        return;
-    }
+    if (displayEvents.length === 0) { els.eventsList.innerHTML = `<div class="text-center text-gray-500 mt-4">No upcoming events.</div>`; return; }
     els.eventsList.innerHTML = displayEvents.map(e => {
         const date = new Date(e.datetime); 
         const month = date.toLocaleString('default', { month: 'short' });
@@ -596,17 +472,7 @@ function mergeAndRenderEvents() {
     }).join('');
 }
 
-// --- Utils ---
-function startClock() {
-    setInterval(() => {
-        const now = new Date();
-        els.liveTime.innerText = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-        els.liveDate.innerText = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
-    }, 1000);
-}
-
-// --- Admin Functions ---
-
+// --- Admin Interface ---
 window.formatText = (identifier, tag) => {
     let textarea = document.querySelector(`textarea[name="${identifier}"]`);
     if (!textarea) textarea = document.getElementById(identifier);
@@ -618,9 +484,7 @@ window.formatText = (identifier, tag) => {
     textarea.focus();
 };
 
-window.toggleAdminModal = () => {
-    document.getElementById('admin-modal').classList.toggle('hidden');
-};
+window.toggleAdminModal = () => { document.getElementById('admin-modal').classList.toggle('hidden'); };
 
 window.switchTab = (tabId) => {
     document.querySelectorAll('.admin-content').forEach(el => el.classList.add('hidden'));
@@ -636,19 +500,14 @@ window.switchTab = (tabId) => {
     }
 };
 
-window.saveTicker = async () => {
-    const text = document.getElementById('ticker-input').value; // Wait, ticker is list now, this is legacy function if we used simple text. 
-    // We are using list management for ticker, so this function isn't used by the new UI, but kept just in case.
-};
+window.saveTicker = async () => { /* managed by list now */ };
 
 window.saveConfig = async () => {
     showLoader();
     try {
         const logoFile = document.getElementById('conf-logo-file').files[0];
         let logoBase64 = appData.settings?.logo || "";
-        if (logoFile) {
-            try { logoBase64 = await convertBase64(logoFile); } catch (err) { console.error(err); }
-        }
+        if (logoFile) { try { logoBase64 = await convertBase64(logoFile); } catch (err) { console.error(err); } }
         const conf = {
             schoolName: els.confName.value,
             subtitle: els.confSubtitle.value,
@@ -657,11 +516,8 @@ window.saveConfig = async () => {
             googleCalendar: els.confCalendar.value,
             logo: logoBase64
         };
-        if (appData.settingsId) {
-            await updateDoc(doc(getCollectionRef(COLLECTIONS.SETTINGS), appData.settingsId), conf);
-        } else {
-            await addDoc(getCollectionRef(COLLECTIONS.SETTINGS), conf);
-        }
+        if (appData.settingsId) await updateDoc(doc(getCollectionRef(COLLECTIONS.SETTINGS), appData.settingsId), conf);
+        else await addDoc(getCollectionRef(COLLECTIONS.SETTINGS), conf);
     } catch(e) { console.error(e); }
     hideLoader();
 };
@@ -669,37 +525,21 @@ window.saveConfig = async () => {
 function showLoader() { document.getElementById('global-loader').classList.remove('hidden'); }
 function hideLoader() { document.getElementById('global-loader').classList.add('hidden'); }
 
-// --- Admin CRUD UI Generators ---
-
 function renderAdminList(type, data) {
     const container = els[`admin${type.charAt(0).toUpperCase() + type.slice(1)}`];
     if (!container) return;
-    if (data.length === 0) {
-        container.innerHTML = `<p class="text-gray-500 italic col-span-3">No items found.</p>`;
-        return;
-    }
+    if (data.length === 0) { container.innerHTML = `<p class="text-gray-500 italic col-span-3">No items found.</p>`; return; }
     container.innerHTML = data.map(item => {
         let mainText = item.title || item.name || item.text;
         let subText = item.description || item.dept || item.datetime || '';
         let img = item.image;
-        if (type === 'ticker') {
-             const tmp = document.createElement("DIV");
-             tmp.innerHTML = mainText;
-             mainText = tmp.textContent || tmp.innerText || "";
-             subText = "Ticker Message";
-        } else if (type === 'media') {
-            mainText = item.type.toUpperCase() + ' Media';
-            subText = item.content ? item.content.substring(0, 40) + '...' : 'No Content';
-            if (item.type === 'image') img = item.content;
-        }
+        if (type === 'ticker') { const tmp = document.createElement("DIV"); tmp.innerHTML = mainText; mainText = tmp.textContent || tmp.innerText || ""; subText = "Ticker Message"; } 
+        else if (type === 'media') { mainText = item.type.toUpperCase() + ' Media'; subText = item.content ? item.content.substring(0, 40) + '...' : 'No Content'; if (item.type === 'image') img = item.content; }
         return `
         <div class="bg-white p-4 rounded-lg shadow border border-gray-200 flex justify-between items-start group">
             <div class="flex items-start space-x-3 overflow-hidden">
                 ${img ? `<img src="${img}" class="w-10 h-10 rounded-full object-cover border">` : ''}
-                <div class="min-w-0">
-                    <h4 class="font-bold text-gray-800 truncate text-sm">${mainText}</h4>
-                    <p class="text-xs text-gray-500 truncate">${subText || ''}</p>
-                </div>
+                <div class="min-w-0"><h4 class="font-bold text-gray-800 truncate text-sm">${mainText}</h4><p class="text-xs text-gray-500 truncate">${subText || ''}</p></div>
             </div>
             <div class="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button onclick="editEntry('${type}', '${item.id}')" class="text-blue-600 hover:text-blue-800"><i class="fas fa-edit"></i></button>
@@ -709,7 +549,6 @@ function renderAdminList(type, data) {
     }).join('');
 }
 
-// --- Entry Modal Logic ---
 let currentEditType = null;
 let currentEditId = null;
 
@@ -732,9 +571,7 @@ window.editEntry = (type, id) => {
     document.getElementById('entry-modal').classList.remove('hidden');
 };
 
-window.closeEntryModal = () => {
-    document.getElementById('entry-modal').classList.add('hidden');
-};
+window.closeEntryModal = () => { document.getElementById('entry-modal').classList.add('hidden'); };
 
 window.deleteEntry = async (type, id) => {
     if(!confirm("Are you sure?")) return;
@@ -782,38 +619,20 @@ function generateFormFields(type, values) {
     if (type === 'announcements') {
         html += `
             <div><label class="block text-sm font-bold mb-1">Title</label><input name="title" required value="${v.title || ''}" class="w-full p-2 border rounded"></div>
-            <div>
-                <div class="flex justify-between items-center mb-1">
-                    <div class="flex items-center"><label class="block text-sm font-bold mr-2">Description</label></div>
-                    ${toolbar('description')}
-                </div>
-                <textarea name="description" required rows="3" class="w-full p-2 border rounded">${v.description || ''}</textarea>
-            </div>
+            <div><div class="flex justify-between items-center mb-1"><div class="flex items-center"><label class="block text-sm font-bold mr-2">Description</label></div>${toolbar('description')}</div><textarea name="description" required rows="3" class="w-full p-2 border rounded">${v.description || ''}</textarea></div>
             <div class="flex items-center mt-2"><input type="checkbox" name="urgent" ${v.urgent ? 'checked' : ''} class="h-4 w-4"><label class="ml-2 text-sm font-bold text-red-600">Mark as Urgent</label></div>
         `;
     } else if (type === 'students') {
         html += `
             <div><label class="block text-sm font-bold mb-1">Student Name</label><input name="name" required value="${v.name || ''}" class="w-full p-2 border rounded"></div>
             <div><label class="block text-sm font-bold mb-1">Focus Area</label><input name="focus" placeholder="e.g. Science, Basketball" value="${v.focus || ''}" class="w-full p-2 border rounded"></div>
-            <div>
-                <div class="flex justify-between items-center mb-1">
-                    <div class="flex items-center"><label class="block text-sm font-bold mr-2">Quote / Description</label></div>
-                    ${toolbar('description')}
-                </div>
-                <textarea name="description" required rows="3" class="w-full p-2 border rounded">${v.description || ''}</textarea>
-            </div>
+            <div><div class="flex justify-between items-center mb-1"><div class="flex items-center"><label class="block text-sm font-bold mr-2">Quote / Description</label></div>${toolbar('description')}</div><textarea name="description" required rows="3" class="w-full p-2 border rounded">${v.description || ''}</textarea></div>
         `;
     } else if (type === 'teachers') {
         html += `
             <div><label class="block text-sm font-bold mb-1">Name</label><input name="name" required value="${v.name || ''}" class="w-full p-2 border rounded"></div>
             <div><label class="block text-sm font-bold mb-1">Department</label><select name="dept" class="w-full p-2 border rounded">${DEPARTMENTS.map(d => `<option value="${d}" ${v.dept === d ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
-            <div>
-                <div class="flex justify-between items-center mb-1">
-                    <div class="flex items-center"><label class="block text-sm font-bold mr-2">Bio</label></div>
-                    ${toolbar('bio')}
-                </div>
-                <textarea name="bio" required rows="3" class="w-full p-2 border rounded">${v.bio || ''}</textarea>
-            </div>
+            <div><div class="flex justify-between items-center mb-1"><div class="flex items-center"><label class="block text-sm font-bold mr-2">Bio</label></div>${toolbar('bio')}</div><textarea name="bio" required rows="3" class="w-full p-2 border rounded">${v.bio || ''}</textarea></div>
         `;
     } else if (type === 'events') {
         html += `
@@ -822,28 +641,15 @@ function generateFormFields(type, values) {
             <div><label class="block text-sm font-bold mb-1">Location</label><input name="location" value="${v.location || ''}" class="w-full p-2 border rounded"></div>
         `;
     } else if (type === 'ticker') {
-        html += `
-            <div>
-                <div class="flex justify-between items-center mb-1">
-                    <div class="flex items-center"><label class="block text-sm font-bold mr-2">Message</label></div>
-                </div>
-                <textarea name="text" required rows="3" class="w-full p-2 border rounded">${v.text || ''}</textarea>
-            </div>
-        `;
+        html += `<div><div class="flex justify-between items-center mb-1"><div class="flex items-center"><label class="block text-sm font-bold mr-2">Message</label></div></div><textarea name="text" required rows="3" class="w-full p-2 border rounded">${v.text || ''}</textarea></div>`;
     } else if (type === 'media') {
         html += `
-            <div>
-                <label class="block text-sm font-bold mb-1">Media Type</label>
-                <select name="type" class="w-full p-2 border rounded">
-                    <option value="youtube" ${v.type === 'youtube' ? 'selected' : ''}>YouTube Video</option>
-                    <option value="facebook" ${v.type === 'facebook' ? 'selected' : ''}>Facebook Embed Code</option>
-                    <option value="image" ${v.type === 'image' ? 'selected' : ''}>Image URL</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-bold mb-1">Content (URL or Code)</label>
-                <textarea name="content" required rows="3" class="w-full p-2 border rounded font-mono text-xs" placeholder="Paste URL or Code here...">${v.content || ''}</textarea>
-            </div>
+            <div><label class="block text-sm font-bold mb-1">Media Type</label><select name="type" class="w-full p-2 border rounded">
+                <option value="youtube" ${v.type === 'youtube' ? 'selected' : ''}>YouTube Video</option>
+                <option value="facebook" ${v.type === 'facebook' ? 'selected' : ''}>Facebook Embed Code</option>
+                <option value="image" ${v.type === 'image' ? 'selected' : ''}>Image URL</option>
+            </select></div>
+            <div><label class="block text-sm font-bold mb-1">Content (URL or Code)</label><textarea name="content" required rows="3" class="w-full p-2 border rounded font-mono text-xs" placeholder="Paste URL or Code here...">${v.content || ''}</textarea></div>
         `;
     }
     if (type !== 'events' && type !== 'ticker' && type !== 'media') {
