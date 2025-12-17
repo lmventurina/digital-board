@@ -1,7 +1,7 @@
-// !!! UPDATED: Changed version from 11.6.1 to 10.12.2 to fix loading error !!!
+// !!! UPDATED: Reverted to Anonymous Auth Version (No Email/Password required) !!!
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, setDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // Inject YouTube IFrame API
@@ -72,67 +72,31 @@ const els = {
 
 // --- Authentication & Initialization ---
 async function initAuth() {
-    if (!auth.currentUser) {
-        try {
-            await signInAnonymously(auth); 
-        } catch (e) {
-            console.log("Guest login not enabled. Viewing as public.");
-        }
+    try {
+        await signInAnonymously(auth); 
+    } catch (e) {
+        console.error("Anonymous login failed", e);
     }
 }
 initAuth();
 
 onAuthStateChanged(auth, (user) => {
     currentUser = user;
-    if (user && !user.isAnonymous) {
-        console.log("Admin Logged In:", user.email);
+    if (user) {
+        console.log("Connected as Anonymous User:", user.uid);
+        setupListeners();
     }
-    setupListeners();
 });
 
 startClock();
 
-// --- Auth Functions (Attached to Window) ---
+// --- Auth Functions (Reverted to Direct Access) ---
 window.handleAdminClick = () => {
-    // Check if user is logged in AND not anonymous (meaning they are a real admin)
-    if (currentUser && !currentUser.isAnonymous) {
-        document.getElementById('admin-modal').classList.remove('hidden');
-    } else {
-        document.getElementById('login-modal').classList.remove('hidden');
-    }
+    // Directly open the admin modal without checking for email/password login
+    document.getElementById('admin-modal').classList.remove('hidden');
 };
 
-window.handleLogin = async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    const errorMsg = document.getElementById('login-error');
-    
-    errorMsg.innerText = "Signing in...";
-    errorMsg.classList.remove('hidden');
-    
-    try {
-        await signInWithEmailAndPassword(auth, email, password);
-        document.getElementById('login-modal').classList.add('hidden');
-        document.getElementById('admin-modal').classList.remove('hidden');
-        document.getElementById('login-form').reset();
-        errorMsg.classList.add('hidden');
-    } catch (error) {
-        console.error(error);
-        errorMsg.innerText = "Login failed: " + error.code;
-    }
-};
-
-window.handleLogout = async () => {
-    try {
-        await signOut(auth);
-        document.getElementById('admin-modal').classList.add('hidden');
-        initAuth();
-        alert("Logged out successfully.");
-    } catch (error) {
-        console.error(error);
-    }
-};
+// Removed handleLogin and handleLogout as they are not needed for anonymous mode
 
 // --- Firebase Listeners ---
 function getCollectionRef(colName) {
@@ -190,6 +154,18 @@ function setupListeners() {
             appData.settings = data[0];
             appData.settingsId = data[0].id;
             updateUIConfig(data[0]);
+        } else {
+            // Create default settings if they don't exist
+            if(currentUser) {
+                const defaults = {
+                    schoolName: "Navajo Pine HS",
+                    subtitle: "School of Technology",
+                    subtitle2: "<b><i>Home of the Tech Warriors (Tó éí Tech Naalʼánígíí Kéyah)</i></b>",
+                    location: "Navajo, NM",
+                    googleCalendar: ""
+                };
+                addDoc(getCollectionRef(COLLECTIONS.SETTINGS), defaults);
+            }
         }
     });
 
