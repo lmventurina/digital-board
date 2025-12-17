@@ -6,134 +6,257 @@
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>School Digital Bulletin Board</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
-    
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 
-    <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        navy: '#003893',
-                        gold: '#facc15',
+                        school: { navy: '#003893', gold: '#facc15', goldDark: '#eab308' }
                     },
                     fontFamily: {
                         sans: ['Open Sans', 'sans-serif'],
-                        heading: ['Montserrat', 'sans-serif'],
-                    },
-                    boxShadow: {
-                        'school': '0 4px 6px -1px rgba(0, 56, 147, 0.1), 0 2px 4px -1px rgba(0, 56, 147, 0.06)',
+                        display: ['Montserrat', 'sans-serif'],
                     }
                 }
             }
         }
     </script>
 </head>
-<body class="bg-gray-100 h-screen overflow-hidden flex flex-col font-sans select-none">
+<body class="bg-gray-100 h-screen flex flex-col font-sans text-gray-800">
 
-    <header class="bg-white shadow-md p-4 flex justify-between items-center z-10 relative">
-        <div class="flex items-center space-x-6">
-            <img id="school-logo" src="https://placehold.co/100x100?text=Logo" alt="Logo" class="h-20 w-20 rounded-full object-cover border-2 border-navy">
-            <div>
-                <h1 id="school-name" class="text-4xl font-heading font-bold text-navy tracking-tight">Loading School...</h1>
-                <p id="sub-1" class="text-lg text-gray-600 font-semibold mt-1">...</p>
-                <p id="sub-2" class="text-base text-gray-500 italic font-bold">...</p>
+    <!-- Header -->
+    <header class="bg-school-navy text-white pt-3 px-4 pb-2 shadow-lg z-10 flex-none flex flex-col">
+        <div class="flex justify-between items-center mb-1">
+            <div class="flex items-center space-x-4 w-1/3">
+                <div class="h-20 w-20 bg-white rounded-full flex-none flex items-center justify-center border-4 border-school-gold overflow-hidden school-logo-container relative">
+                    <img id="header-logo" src="https://placehold.co/100x100?text=Logo" alt="School Logo" class="h-full w-full object-cover">
+                </div>
+                <div class="min-w-0">
+                    <h1 id="header-school-name" class="text-3xl font-display font-extrabold tracking-wide uppercase whitespace-nowrap overflow-visible">Navajo Pine HS</h1>
+                    <p id="header-subtitle" class="text-school-gold font-semibold text-lg leading-tight">School of Technology</p>
+                </div>
+            </div>
+            <div class="text-center w-1/3">
+                <div id="live-time" class="text-5xl font-display font-bold tabular-nums leading-none">12:00 PM</div>
+                <div id="live-date" class="text-lg text-gray-200 mt-1 uppercase tracking-wider leading-none">Monday, January 1</div>
+            </div>
+            <div class="w-1/3 flex justify-end">
+                <div class="bg-blue-900/50 rounded-xl p-2 backdrop-blur-sm border border-blue-700/50 flex items-center space-x-3 min-w-[260px]">
+                    <div class="flex flex-col items-center justify-center px-2 border-r border-blue-700/50">
+                        <span id="weather-city" class="text-[10px] text-school-gold font-bold uppercase mb-0 leading-none">Loading...</span>
+                        <div class="text-2xl my-1" id="weather-current-icon"><i class="fas fa-cloud"></i></div>
+                        <span id="weather-current-temp" class="text-lg font-bold leading-none">--°</span>
+                    </div>
+                    <div class="flex-1 flex justify-between text-center text-xs space-x-1" id="weather-forecast"></div>
+                </div>
             </div>
         </div>
-        <div class="text-right">
-            <div id="clock" class="text-5xl font-heading font-bold text-navy tabular-nums">00:00</div>
-            <div id="date" class="text-xl text-gray-600 font-semibold mb-1">...</div>
-            <div id="weather" class="flex items-center justify-end space-x-2 text-sm text-navy bg-blue-50 px-3 py-1 rounded-full">
-                <i class="fa-solid fa-cloud"></i> <span>Loading Weather...</span>
-            </div>
+        <div class="w-full text-center border-t border-white/10 pt-2 mt-1">
+            <p id="header-subtitle-2" class="text-gray-300 font-medium text-sm tracking-[0.2em] uppercase">Home of the Tech Warriors</p>
         </div>
     </header>
 
-    <div class="bg-gold text-navy font-bold py-2 overflow-hidden relative shadow-inner z-10">
-        <div id="ticker-content" class="ticker-wrap whitespace-nowrap">
-            <span class="inline-block pl-[100%]">Welcome to our digital bulletin board!</span>
+    <!-- Ticker -->
+    <div class="bg-school-gold text-school-navy font-bold py-2 border-b-4 border-school-navy/20 flex-none z-10 relative shadow-md w-full overflow-hidden">
+        <div class="ticker-wrap">
+            <div class="ticker-move" id="ticker-content">Loading...</div>
         </div>
     </div>
 
-    <main class="flex-grow p-6 grid grid-cols-4 gap-6 overflow-hidden relative">
-        
-        <div class="col-span-3 grid grid-cols-2 grid-rows-2 gap-6 h-full">
-            
-            <div class="bg-white rounded-2xl shadow-school overflow-hidden relative group">
-                <div class="absolute top-4 left-4 bg-navy text-white px-3 py-1 rounded-full text-xs font-bold z-10 uppercase tracking-wider">Student Spotlight</div>
-                <div id="student-carousel" class="h-full w-full relative">
+    <!-- Main Grid -->
+    <main class="flex-grow p-4 overflow-hidden flex flex-col md:flex-row gap-6">
+        <div class="w-full md:w-3/4 h-full">
+            <div class="grid grid-cols-1 md:grid-cols-2 grid-rows-2 gap-6 h-full">
+                <!-- Top Left: Student Spotlight -->
+                <div class="bg-gradient-to-br from-white to-blue-100 rounded-2xl school-shadow border border-gray-200 flex flex-col overflow-hidden relative group">
+                    <div class="bg-school-navy py-2 px-4 flex justify-between items-center">
+                        <h2 class="text-white font-display font-bold text-xl"><i class="fas fa-star text-school-gold mr-2"></i> Student Spotlight</h2>
                     </div>
-            </div>
-
-            <div class="bg-white rounded-2xl shadow-school overflow-hidden relative group">
-                <div class="absolute top-4 left-4 bg-gold text-navy px-3 py-1 rounded-full text-xs font-bold z-10 uppercase tracking-wider">Staff Feature</div>
-                <div id="teacher-carousel" class="h-full w-full relative">
+                    <div class="flex-grow relative p-6 flex items-center justify-center" id="student-carousel">
+                        <div class="text-center w-full"><p class="text-gray-400">Loading...</p></div>
                     </div>
-            </div>
-
-            <div class="bg-white rounded-2xl shadow-school overflow-hidden relative group">
-                <div class="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold z-10 uppercase tracking-wider">Announcements</div>
-                <div id="announcement-carousel" class="h-full w-full relative">
-                    </div>
-            </div>
-
-            <div class="bg-white rounded-2xl shadow-school overflow-hidden relative bg-black">
-                <div id="media-carousel" class="h-full w-full relative flex items-center justify-center">
-                    </div>
-            </div>
-        </div>
-
-        <div class="col-span-1 bg-white rounded-2xl shadow-school overflow-hidden flex flex-col h-full bg-gradient-to-br from-white to-gray-50">
-            <div class="bg-navy text-white p-4 text-center font-heading font-bold text-xl sticky top-0 z-10">
-                <i class="fa-regular fa-calendar-check mr-2"></i> Upcoming Events
-            </div>
-            <div id="events-list" class="p-4 space-y-4 overflow-y-auto no-scrollbar flex-grow">
+                    <div class="absolute bottom-0 left-0 h-1 bg-school-gold transition-all duration-300" id="student-progress" style="width: 0%"></div>
                 </div>
+                <!-- Top Right: Teacher Feature -->
+                <div class="bg-gradient-to-br from-white to-yellow-100 rounded-2xl school-shadow border border-gray-200 flex flex-col overflow-hidden relative">
+                    <div class="bg-school-navy py-2 px-4">
+                        <h2 class="text-white font-display font-bold text-xl"><i class="fas fa-chalkboard-teacher text-school-gold mr-2"></i> Teacher/Staff Feature</h2>
+                    </div>
+                    <div class="flex-grow relative p-6 flex items-center justify-center" id="teacher-carousel">
+                         <div class="text-center w-full"><p class="text-gray-400">Loading...</p></div>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-1 bg-school-gold transition-all duration-300" id="teacher-progress" style="width: 0%"></div>
+                </div>
+                <!-- Bottom Left: Announcements -->
+                <div class="bg-gradient-to-br from-white to-blue-50 rounded-2xl school-shadow border border-gray-200 flex flex-col overflow-hidden relative">
+                    <div class="bg-school-navy py-2 px-4">
+                        <h2 class="text-white font-display font-bold text-xl"><i class="fas fa-bullhorn text-school-gold mr-2"></i> Announcements</h2>
+                    </div>
+                    <div class="flex-grow relative p-6 flex items-center justify-center" id="announcement-carousel">
+                         <div class="text-center w-full"><p class="text-gray-400">No Announcements</p></div>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-1 bg-school-gold transition-all duration-300" id="announcement-progress" style="width: 0%"></div>
+                </div>
+                <!-- Bottom Right: Media Feed -->
+                <div class="bg-black rounded-2xl school-shadow border border-gray-200 flex flex-col overflow-hidden relative" id="media-slot-main">
+                    <div class="bg-school-navy py-2 px-4">
+                        <h3 class="text-white font-display font-bold text-xl"><i class="fas fa-photo-video text-school-gold mr-2"></i> Media Feed</h3>
+                    </div>
+                    <div class="flex-grow bg-black relative" id="media-carousel">
+                        <div class="absolute inset-0 flex items-center justify-center text-gray-500 text-sm"><div class="text-center"><i class="fas fa-play-circle fa-2x mb-2"></i><p>No Media Set</p></div></div>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-1 bg-school-gold transition-all duration-300 z-10" id="media-progress" style="width: 0%"></div>
+                </div>
+            </div>
         </div>
-
+        <!-- Sidebar (Upcoming Events) -->
+        <aside class="w-full md:w-1/4 h-full flex flex-col">
+            <div class="bg-gradient-to-br from-white to-gray-200 rounded-2xl school-shadow border border-gray-200 flex flex-col overflow-hidden h-full">
+                <div class="bg-school-navy py-2 px-4 flex justify-between items-center">
+                    <h2 class="text-white font-display font-bold text-xl"><i class="fas fa-calendar-alt text-school-gold mr-2"></i> Events</h2>
+                    <span class="text-xs text-white bg-blue-800 px-2 py-1 rounded">Next 10</span>
+                </div>
+                <div class="flex-grow overflow-y-auto custom-scrollbar p-4" id="events-list">
+                        <div class="text-center w-full text-gray-400 mt-4">Loading Events...</div>
+                </div>
+            </div>
+        </aside>
     </main>
 
-    <button id="admin-btn" class="fixed bottom-6 right-6 bg-gray-200 hover:bg-navy hover:text-white text-gray-600 p-4 rounded-full shadow-lg transition-all duration-300 z-50">
-        <i class="fa-solid fa-gear text-xl"></i>
+    <!-- Admin Access Button -->
+    <button onclick="if(window.handleAdminClick) window.handleAdminClick(); else alert('System still loading or error occurred. Check console.');" class="fixed bottom-6 right-6 bg-gray-800/80 hover:bg-school-navy text-white p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 z-50 backdrop-blur">
+        <i class="fas fa-cog fa-lg"></i>
     </button>
 
-    <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-[60]">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-96">
-            <h2 class="text-2xl font-bold text-navy mb-6">Admin Login</h2>
-            <input type="email" id="email" placeholder="Email" class="w-full p-3 border rounded-lg mb-4 focus:outline-none focus:border-navy">
-            <input type="password" id="password" placeholder="Password" class="w-full p-3 border rounded-lg mb-6 focus:outline-none focus:border-navy">
-            <div class="flex justify-end space-x-3">
-                <button class="modal-close px-4 py-2 text-gray-500 hover:text-gray-700">Cancel</button>
-                <button id="login-submit" class="px-6 py-2 bg-navy text-white rounded-lg hover:bg-blue-800">Login</button>
+    <!-- Login Modal -->
+    <div id="login-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-xl shadow-2xl p-8 relative">
+            <button onclick="document.getElementById('login-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            <div class="text-center mb-6">
+                <div class="bg-school-navy h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4 text-school-gold text-2xl"><i class="fas fa-lock"></i></div>
+                <h3 class="text-2xl font-bold text-gray-800">Admin Access</h3>
+                <p class="text-gray-500 text-sm">Please sign in to edit the board.</p>
+            </div>
+            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Email</label>
+                    <input type="email" id="login-email" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-school-navy outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Password</label>
+                    <input type="password" id="login-password" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-school-navy outline-none">
+                </div>
+                <button type="submit" class="w-full bg-school-navy hover:bg-blue-800 text-white font-bold py-3 rounded-lg transition-colors shadow-lg">Sign In</button>
+                <div id="login-error" class="text-red-500 text-sm text-center hidden"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div id="admin-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-5xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div class="bg-gray-800 text-white p-4 flex justify-between items-center">
+                <h3 class="text-xl font-bold font-display"><i class="fas fa-sliders-h mr-2"></i> Dashboard Configuration</h3>
+                <div class="flex items-center space-x-4">
+                    <button onclick="handleLogout()" class="text-xs bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-white transition-colors">Logout</button>
+                    <button onclick="toggleAdminModal()" class="text-gray-400 hover:text-white transition-colors"><i class="fas fa-times fa-lg"></i></button>
+                </div>
+            </div>
+            <div class="flex flex-grow overflow-hidden">
+                <div class="w-1/5 bg-gray-100 border-r border-gray-200 overflow-y-auto">
+                    <nav class="flex flex-col p-2 space-y-1" id="admin-tabs">
+                        <button onclick="switchTab('tab-announcements')" class="admin-tab-btn active text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm border-l-4 border-transparent"><i class="fas fa-bullhorn w-6"></i> Announcements</button>
+                        <button onclick="switchTab('tab-students')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm border-l-4 border-transparent"><i class="fas fa-user-graduate w-6"></i> Students</button>
+                        <button onclick="switchTab('tab-teachers')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm border-l-4 border-transparent"><i class="fas fa-chalkboard-teacher w-6"></i> Teacher/Staff</button>
+                        <button onclick="switchTab('tab-events')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm border-l-4 border-transparent"><i class="fas fa-calendar-alt w-6"></i> Events</button>
+                        <button onclick="switchTab('tab-ticker')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm border-l-4 border-transparent"><i class="fas fa-scroll w-6"></i> Ticker</button>
+                        <button onclick="switchTab('tab-media')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm border-l-4 border-transparent"><i class="fas fa-photo-video w-6"></i> Media Sidebar</button>
+                        <button onclick="switchTab('tab-config')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm border-l-4 border-transparent"><i class="fas fa-tools w-6"></i> Config</button>
+                    </nav>
+                </div>
+                <div class="w-4/5 p-8 overflow-y-auto bg-gray-50 relative">
+                    <!-- Announcements -->
+                    <div id="tab-announcements" class="admin-content block">
+                        <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-gray-800">Manage Announcements</h2><button onclick="openEntryModal('announcements')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add New</button></div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="admin-announcements-list"></div>
+                    </div>
+                    <!-- Students -->
+                    <div id="tab-students" class="admin-content hidden">
+                        <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-gray-800">Manage Student Spotlight</h2><button onclick="openEntryModal('students')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add Student</button></div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="admin-students-list"></div>
+                    </div>
+                    <!-- Teachers -->
+                    <div id="tab-teachers" class="admin-content hidden">
+                        <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-gray-800">Manage Teacher/Staff Features</h2><button onclick="openEntryModal('teachers')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add Feature</button></div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="admin-teachers-list"></div>
+                    </div>
+                    <!-- Events -->
+                    <div id="tab-events" class="admin-content hidden">
+                        <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-gray-800">Manage Manual Events</h2><button onclick="openEntryModal('events')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add Event</button></div>
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6"><p class="text-sm text-blue-700">Events from Google Calendar are fetched automatically.</p></div>
+                        <div class="space-y-2" id="admin-events-list"></div>
+                    </div>
+                    <!-- Ticker -->
+                    <div id="tab-ticker" class="admin-content hidden">
+                        <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-gray-800">Manage Ticker Messages</h2><button onclick="openEntryModal('ticker')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add Message</button></div>
+                        <div class="space-y-2" id="admin-ticker-list"></div>
+                    </div>
+                    <!-- Media -->
+                    <div id="tab-media" class="admin-content hidden">
+                        <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-gray-800">Manage Media Sidebar</h2><button onclick="openEntryModal('media')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add Media</button></div>
+                        <div class="space-y-2" id="admin-media-list"></div>
+                    </div>
+                    <!-- Config -->
+                    <div id="tab-config" class="admin-content hidden">
+                        <div class="max-w-3xl mx-auto space-y-6">
+                            <div class="bg-white p-6 rounded-xl shadow-sm border">
+                                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">School Identity</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label class="block text-sm font-medium text-gray-700">School Name</label><input type="text" id="conf-name" class="w-full p-2 border rounded"></div>
+                                    <div><label class="block text-sm font-medium text-gray-700">Subtitle</label><input type="text" id="conf-subtitle" class="w-full p-2 border rounded"></div>
+                                    <div class="md:col-span-2"><label class="block text-sm font-medium text-gray-700">Subtitle 2</label><input type="text" id="conf-subtitle-2" class="w-full p-2 border rounded"></div>
+                                    <div class="md:col-span-2 border-t pt-4 mt-2"><label class="block text-sm font-medium text-gray-700 mb-2">School Logo</label><input type="file" id="conf-logo-file" accept="image/*" class="text-sm block w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-school-navy/10 file:text-school-navy hover:file:bg-school-navy/20"></div>
+                                </div>
+                            </div>
+                            <div class="bg-white p-6 rounded-xl shadow-sm border">
+                                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Integrations</h3>
+                                <div class="space-y-4">
+                                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Weather Location</label><input type="text" id="conf-location" class="w-full p-2 border rounded"></div>
+                                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Google Calendar Public iCal Link</label><input type="text" id="conf-calendar" class="w-full p-2 border rounded"></div>
+                                </div>
+                            </div>
+                            <button onclick="saveConfig()" class="w-full bg-school-navy hover:bg-blue-800 text-white font-bold py-3 rounded-lg transition-colors shadow">Save Configuration</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="admin-panel" class="fixed inset-0 bg-black bg-opacity-80 hidden flex items-center justify-center z-[60]">
-        <div class="bg-white w-[90%] h-[90%] rounded-2xl shadow-2xl flex overflow-hidden">
-            <div class="w-64 bg-gray-100 p-6 flex flex-col border-r">
-                <h2 class="text-xl font-bold text-navy mb-8">Dashboard</h2>
-                <nav class="space-y-2 flex-grow">
-                    <button class="admin-tab-btn w-full text-left p-3 rounded-lg bg-navy text-white" data-tab="config">Configuration</button>
-                    <button class="admin-tab-btn w-full text-left p-3 rounded-lg hover:bg-gray-200 text-gray-700" data-tab="announcements">Announcements</button>
-                    <button class="admin-tab-btn w-full text-left p-3 rounded-lg hover:bg-gray-200 text-gray-700" data-tab="students">Students</button>
-                    <button class="admin-tab-btn w-full text-left p-3 rounded-lg hover:bg-gray-200 text-gray-700" data-tab="teachers">Teachers</button>
-                    <button class="admin-tab-btn w-full text-left p-3 rounded-lg hover:bg-gray-200 text-gray-700" data-tab="events">Events</button>
-                    <button class="admin-tab-btn w-full text-left p-3 rounded-lg hover:bg-gray-200 text-gray-700" data-tab="media">Media Feed</button>
-                    <button class="admin-tab-btn w-full text-left p-3 rounded-lg hover:bg-gray-200 text-gray-700" data-tab="ticker">Ticker</button>
-                </nav>
-                <button id="logout-btn" class="mt-auto w-full p-3 rounded-lg border border-red-500 text-red-500 hover:bg-red-50">Logout</button>
-                <button class="modal-close mt-2 w-full p-3 text-gray-500 text-sm">Close Panel</button>
-            </div>
-            
-            <div class="flex-grow p-8 overflow-y-auto bg-gray-50 relative">
-                <div id="admin-content"></div>
-            </div>
+    <!-- Entry Edit/Add Modal (Generic) -->
+    <div id="entry-modal" class="fixed inset-0 bg-black/50 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+            <h3 id="entry-modal-title" class="text-xl font-bold mb-4">Add Item</h3>
+            <form id="entry-form" onsubmit="handleEntrySubmit(event)" class="space-y-4">
+                <div id="entry-fields"></div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeEntryModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-school-navy text-white rounded hover:bg-blue-800">Save</button>
+                </div>
+            </form>
         </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="global-loader" class="fixed top-4 right-4 bg-white px-4 py-2 rounded-full shadow-lg z-[100] hidden flex items-center space-x-2">
+        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-school-navy"></div>
+        <span class="text-xs font-bold text-school-navy">Saving...</span>
     </div>
 
     <script type="module" src="app.js"></script>
