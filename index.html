@@ -768,6 +768,15 @@
             if (config.index >= data.length) config.index = 0;
 
             const showSlide = () => {
+                // Clear any running timer to prevent overlaps
+                if (config.timer) clearTimeout(config.timer);
+                
+                // Cleanup previous media player if exists
+                if (type === 'media' && window.currentMediaPlayer) { 
+                    try { window.currentMediaPlayer.destroy(); } catch(e){} 
+                    window.currentMediaPlayer = null; 
+                }
+
                 if (progressBar) { progressBar.style.transition = 'none'; progressBar.style.width = '0%'; }
                 const item = data[config.index];
                 container.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center opacity-0 transition-opacity duration-500 relative" id="${type}-slide-content"></div>`;
