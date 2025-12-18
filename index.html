@@ -389,8 +389,9 @@
 
     <!-- Main Logic -->
     <script type="module">
+        // !!! UPDATED: Reverted to Version 10.12.2 to match original app.js and fix 404s !!!
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, setDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // Inject YouTube IFrame API
@@ -402,20 +403,29 @@
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
         // --- Configuration ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyAtawxqfPOZqKJZcClKBVXSClC3IsIuDtM",
-            authDomain: "digital-bulletin-board-6c660.firebaseapp.com",
-            projectId: "digital-bulletin-board-6c660",
-            storageBucket: "digital-bulletin-board-6c660.firebasestorage.app",
-            messagingSenderId: "1051324595132",
-            appId: "1:1051324595132:web:bb95ce7acc65d9e80d49b9",
-            measurementId: "G-6VW2SKC09Z"
-        };
+        // Robust Config: Checks for environment variable (Canvas) OR uses Fallback (Local/GitHub)
+        let firebaseConfig;
+        if (typeof __firebase_config !== 'undefined') {
+            firebaseConfig = JSON.parse(__firebase_config);
+        } else {
+            // Fallback to original app.js credentials
+            firebaseConfig = {
+                apiKey: "AIzaSyAtawxqfPOZqKJZcClKBVXSClC3IsIuDtM",
+                authDomain: "digital-bulletin-board-6c660.firebaseapp.com",
+                projectId: "digital-bulletin-board-6c660",
+                storageBucket: "digital-bulletin-board-6c660.firebasestorage.app",
+                messagingSenderId: "1051324595132",
+                appId: "1:1051324595132:web:bb95ce7acc65d9e80d49b9",
+                measurementId: "G-6VW2SKC09Z"
+            };
+        }
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = 'navajo-pine-hs-v1'; 
+        
+        // Handle appId similarly
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'navajo-pine-hs-v1'; 
 
         let currentUser = null;
         let appData = { announcements: [], students: [], teachers: [], events: [], externalEvents: [], ticker: "", settings: {}, media: [] };
@@ -459,7 +469,11 @@
         // --- Authentication & Initialization ---
         async function initAuth() {
             try {
-                await signInAnonymously(auth);
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
             } catch (e) {
                 console.error("Auth failed", e);
             }
@@ -474,16 +488,12 @@
             }
         });
 
-        // --- Missing Functions Implementation (Fixed) ---
+        // --- Missing Functions Implementation ---
         function startClock() {
             const update = () => {
                 const now = new Date();
-                // Forces Mountain Time (Navajo, NM)
-                const timeOptions = { hour: '2-digit', minute: '2-digit', timeZone: 'America/Denver' };
-                const dateOptions = { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'America/Denver' };
-                
-                els.liveTime.innerText = now.toLocaleTimeString('en-US', timeOptions);
-                els.liveDate.innerText = now.toLocaleDateString('en-US', dateOptions);
+                els.liveTime.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                els.liveDate.innerText = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
             };
             update();
             setInterval(update, 1000);
@@ -498,11 +508,15 @@
             }
             els.weatherCity.innerText = location;
             
-            // Default to Navajo, NM coordinates
+            // Simple Open-Meteo Integration
+            // 1. Geocoding (Simulated for common places or using a simple heuristic)
+            // For this demo, we will use coordinates for Navajo, NM as default if lookup fails
+            // Navajo, NM: 35.8973, -109.0289
             let lat = 35.8973;
             let lon = -109.0289;
 
-            // Simple override for common demo locations
+            // Very basic "Geocoding" for demo purposes. 
+            // In a real production app, use Google Maps Geocoding API or OpenStreetMap Nominatim.
             if (location.toLowerCase().includes('gallup')) { lat = 35.5281; lon = -108.7426; }
             if (location.toLowerCase().includes('window rock')) { lat = 35.6731; lon = -109.0556; }
             if (location.toLowerCase().includes('albuquerque')) { lat = 35.0844; lon = -106.6504; }
@@ -513,19 +527,22 @@
                 const res = await fetch(url);
                 const data = await res.json();
                 
+                // Helper to map WMO codes to Font Awesome
+                const getWeatherIcon = (code) => {
+                    if (code <= 1) return 'fa-sun';
+                    if (code <= 3) return 'fa-cloud-sun';
+                    if (code <= 48) return 'fa-smog';
+                    if (code <= 67) return 'fa-cloud-rain';
+                    if (code <= 77) return 'fa-snowflake';
+                    if (code <= 82) return 'fa-cloud-showers-heavy';
+                    if (code <= 86) return 'fa-snowflake';
+                    return 'fa-bolt'; // 95+
+                };
+
                 if (data.current_weather) {
                     els.weatherTemp.innerText = `${Math.round(data.current_weather.temperature)}°`;
-                    
-                    // Weather Codes to Icons
-                    const code = data.current_weather.weathercode;
-                    let icon = 'fa-sun';
-                    if (code > 2) icon = 'fa-cloud-sun';
-                    if (code > 45) icon = 'fa-smog';
-                    if (code > 50) icon = 'fa-cloud-rain';
-                    if (code > 70) icon = 'fa-snowflake';
-                    if (code > 90) icon = 'fa-bolt';
-                    
-                    els.weatherIcon.innerHTML = `<i class="fas ${icon}"></i>`;
+                    const iconClass = getWeatherIcon(data.current_weather.weathercode);
+                    els.weatherIcon.innerHTML = `<i class="fas ${iconClass}"></i>`;
                 }
 
                 if (data.daily) {
@@ -539,10 +556,14 @@
                         const dayName = days[d.getDay()];
                         const max = Math.round(data.daily.temperature_2m_max[i]);
                         const min = Math.round(data.daily.temperature_2m_min[i]);
+                        // Get icon for the day
+                        const dayIcon = getWeatherIcon(data.daily.weathercode[i]);
+
                         forecastHtml += `
-                            <div class="flex flex-col">
-                                <span class="font-bold text-school-gold">${dayName}</span>
-                                <span>${max}°/${min}°</span>
+                            <div class="flex flex-col items-center">
+                                <span class="font-bold text-school-gold text-[10px] uppercase mb-0.5">${dayName}</span>
+                                <i class="fas ${dayIcon} text-white mb-0.5 text-xs"></i>
+                                <span class="text-[10px] font-semibold">${max}°/${min}°</span>
                             </div>
                         `;
                     }
@@ -561,8 +582,8 @@
                console.log("Calendar URL recognized:", icalUrl);
                // In production, use a proxy to fetch this URL
                appData.externalEvents = [
-                   { title: "School Board Mtg", datetime: new Date(Date.now() + 86400000).toISOString().split('T')[0], location: "Admin Building" },
-                   { title: "Early Release", datetime: new Date(Date.now() + 172800000).toISOString().split('T')[0], location: "Campus Wide" }
+                   { title: "School Board Mtg", datetime: new Date(Date.now() + 86400000).toISOString().split('T')[0], location: "Admin" },
+                   { title: "Early Release", datetime: new Date(Date.now() + 172800000).toISOString().split('T')[0], location: "Campus" }
                ];
                mergeAndRenderEvents();
             } else {
