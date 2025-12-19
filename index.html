@@ -214,6 +214,21 @@
         </button>
     </div>
 
+    <!-- PIN Prompt Modal -->
+    <div id="pin-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm text-center transform transition-all scale-100">
+            <h3 class="text-xl font-bold text-school-navy mb-4"><i class="fas fa-lock mr-2"></i> Admin Access</h3>
+            <p class="text-gray-500 mb-4 text-sm">Please enter the security PIN to continue.</p>
+            
+            <input type="password" id="pin-input" class="w-full text-center text-3xl tracking-[0.5em] font-bold border-2 border-gray-300 rounded-lg p-3 mb-6 focus:border-school-navy focus:outline-none transition-colors text-school-navy" maxlength="6" placeholder="••••">
+            
+            <div class="flex space-x-3 justify-center">
+                <button onclick="closePinModal()" class="px-5 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-medium transition-colors">Cancel</button>
+                <button onclick="verifyPin()" class="bg-school-navy hover:bg-blue-800 text-white font-bold py-2 px-8 rounded-lg shadow-lg transition-transform hover:scale-105">Unlock</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Tutorial Modal -->
     <div id="tutorial-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all scale-100">
@@ -436,6 +451,18 @@
                                             <input type="file" id="conf-header-bg-file" accept="image/*" class="text-sm block w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-school-navy/10 file:text-school-navy hover:file:bg-school-navy/20">
                                         </div>
                                         <p class="text-xs text-gray-500 mt-1 ml-20">Upload a header background image (PNG/JPG). Max 1MB. Replaces standard blue glass look.</p>
+                                    </div>
+                                    
+                                    <!-- Security PIN Section -->
+                                    <div class="md:col-span-2 border-t pt-4 mt-2 bg-red-50 p-4 rounded-lg border border-red-100">
+                                        <label class="block text-sm font-bold text-school-navy mb-2"><i class="fas fa-lock mr-2"></i> Security PIN</label>
+                                        <div class="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-4">
+                                            <input type="text" id="conf-admin-pin" class="w-full md:w-32 p-2 border border-gray-300 rounded font-mono text-center tracking-widest text-lg font-bold" placeholder="1234" maxlength="6">
+                                            <div class="text-xs text-gray-600">
+                                                <p>Set a 4-6 digit PIN to protect this Admin Panel.</p>
+                                                <p><strong>Default:</strong> 1234</p>
+                                            </div>
+                                        </div>
                                     </div>
 
                                 </div>
@@ -722,9 +749,49 @@
         }
 
         // --- Auth Functions ---
+        
+        // OLD: window.handleAdminClick = () => { document.getElementById('admin-modal').classList.remove('hidden'); };
+        
+        // NEW: PIN Logic
         window.handleAdminClick = () => {
-            document.getElementById('admin-modal').classList.remove('hidden');
+            const pinModal = document.getElementById('pin-modal');
+            const pinInput = document.getElementById('pin-input');
+            
+            pinModal.classList.remove('hidden');
+            pinInput.value = '';
+            setTimeout(() => pinInput.focus(), 100);
         };
+
+        window.closePinModal = () => {
+            document.getElementById('pin-modal').classList.add('hidden');
+        };
+
+        window.verifyPin = () => {
+            const input = document.getElementById('pin-input').value;
+            // Get saved PIN or default to '1234'
+            const correctPin = (appData.settings && appData.settings.adminPin) ? appData.settings.adminPin : '1234';
+            
+            if (input === correctPin) {
+                closePinModal();
+                document.getElementById('admin-modal').classList.remove('hidden');
+            } else {
+                // Shake effect for wrong PIN
+                const inputEl = document.getElementById('pin-input');
+                inputEl.classList.add('border-red-500', 'bg-red-50');
+                inputEl.classList.add('animate-pulse'); // Simple visual feedback
+                setTimeout(() => {
+                    inputEl.classList.remove('border-red-500', 'bg-red-50', 'animate-pulse');
+                    inputEl.value = '';
+                    inputEl.focus();
+                }, 500);
+            }
+        };
+
+        // Allow Enter key to submit PIN
+        document.getElementById('pin-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') window.verifyPin();
+            if (e.key === 'Escape') window.closePinModal();
+        });
 
         // --- Firebase Listeners ---
         function getCollectionRef(colName) {
@@ -850,6 +917,10 @@
             els.confLocation.value = settings.location || "";
             els.confCalendar.value = settings.googleCalendar || "";
             
+            // Populate PIN Field
+            const pinField = document.getElementById('conf-admin-pin');
+            if (pinField) pinField.value = settings.adminPin || "1234";
+            
             if(settings.headerBackground) {
                 document.getElementById('conf-header-bg-preview').src = settings.headerBackground;
             }
@@ -867,11 +938,31 @@
             // Filter past events (keep today + future)
             const now = new Date();
             now.setHours(0,0,0,0);
+            
             const upcoming = all.filter(e => {
-                const d = new Date(e.datetime);
+                const eventDate = new Date(e.datetime);
                 // Adjust for timezone to ensure we don't accidentally filter out today's event due to UTC diffs
-                d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-                return d >= now;
+                eventDate.setMinutes(eventDate.getMinutes() + eventDate.getTimezoneOffset());
+                
+                // --- Visibility Logic ---
+                // 1. Scheduled Start: If set, hide until this date
+                if (e.startDate) {
+                    const visibleStart = new Date(e.startDate);
+                    visibleStart.setMinutes(visibleStart.getMinutes() + visibleStart.getTimezoneOffset());
+                    if (now < visibleStart) return false;
+                }
+
+                // 2. Scheduled End: If set, hide after this date. 
+                // If NOT set, default to hiding after the actual Event Date.
+                if (e.endDate) {
+                    const visibleEnd = new Date(e.endDate);
+                    visibleEnd.setMinutes(visibleEnd.getMinutes() + visibleEnd.getTimezoneOffset());
+                    if (now > visibleEnd) return false;
+                } else {
+                    if (now > eventDate) return false;
+                }
+
+                return true;
             });
 
             if (upcoming.length === 0) {
@@ -1154,7 +1245,8 @@
                     location: els.confLocation.value,
                     googleCalendar: els.confCalendar.value,
                     logo: logoBase64,
-                    headerBackground: headerBgBase64 // Changed key
+                    headerBackground: headerBgBase64,
+                    adminPin: document.getElementById('conf-admin-pin').value || "1234" // Save PIN
                 };
                 if (appData.settingsId) await updateDoc(doc(getCollectionRef(COLLECTIONS.SETTINGS), appData.settingsId), conf);
                 else await addDoc(getCollectionRef(COLLECTIONS.SETTINGS), conf);
@@ -1271,6 +1363,36 @@
                         // Fix timezone offset for display
                         dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
                         subText = dateObj.toLocaleDateString() + (item.location ? ` - ${item.location}` : '');
+                    }
+
+                    // --- Event Status Logic ---
+                    let isExpired = false;
+                    let isScheduled = false;
+                    const eventDate = new Date(item.datetime);
+                    eventDate.setMinutes(eventDate.getMinutes() + eventDate.getTimezoneOffset());
+
+                    // Check Start Date
+                    if (item.startDate) {
+                        const start = new Date(item.startDate);
+                        start.setMinutes(start.getMinutes() + start.getTimezoneOffset());
+                        if (start > now) isScheduled = true;
+                    }
+
+                    // Check End Date (Explicit or Default to Event Date)
+                    if (item.endDate) {
+                        const end = new Date(item.endDate);
+                        end.setMinutes(end.getMinutes() + end.getTimezoneOffset());
+                        if (end < now) isExpired = true;
+                    } else {
+                        if (eventDate < now) isExpired = true;
+                    }
+
+                    if (isExpired) {
+                        statusBadge = '<span class="bg-red-100 text-red-800 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider ml-2">Expired</span>';
+                    } else if (isScheduled) {
+                        statusBadge = '<span class="bg-yellow-100 text-yellow-800 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider ml-2">Scheduled</span>';
+                    } else {
+                        statusBadge = '<span class="bg-green-100 text-green-800 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider ml-2">Active</span>';
                     }
                 }
                 
@@ -1685,6 +1807,17 @@
                     <div><label class="block text-sm font-bold mb-1">Event Title</label><input name="title" required value="${v.title || ''}" class="w-full p-2 border rounded"></div>
                     <div><label class="block text-sm font-bold mb-1">Date</label><input type="date" name="datetime" required value="${v.datetime || ''}" class="w-full p-2 border rounded"></div>
                     <div><label class="block text-sm font-bold mb-1">Location</label><input name="location" value="${v.location || ''}" class="w-full p-2 border rounded"></div>
+                    
+                    <div class="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded border mt-2">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Display Start Date (Opt)</label>
+                            <input type="date" name="startDate" value="${v.startDate || ''}" class="w-full p-2 border rounded text-sm bg-white" title="When to start showing this event on the board">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Display End Date (Opt)</label>
+                            <input type="date" name="endDate" value="${v.endDate || ''}" class="w-full p-2 border rounded text-sm bg-white" title="When to stop showing. Default is after the event date.">
+                        </div>
+                    </div>
                 `;
             } else if (type === 'ticker') {
                 html += richEditor('text', v.text, 'Message');
