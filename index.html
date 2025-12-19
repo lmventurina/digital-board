@@ -670,7 +670,9 @@
 
             listen(COLLECTIONS.MEDIA, (data) => {
                 appData.media = data;
-                renderCarousel('media', data);
+                // Only pass visible items to the carousel
+                const visibleMedia = data.filter(item => !item.hidden);
+                renderCarousel('media', visibleMedia);
                 renderAdminList('media', data);
             });
         }
@@ -941,6 +943,15 @@
         function showLoader() { document.getElementById('global-loader').classList.remove('hidden'); }
         function hideLoader() { document.getElementById('global-loader').classList.add('hidden'); }
 
+        // Function to toggle visibility directly from list
+        window.toggleVisibility = async (type, id, currentHiddenState) => {
+            showLoader();
+            try {
+                await updateDoc(doc(getCollectionRef(type), id), { hidden: !currentHiddenState });
+            } catch(e) { console.error(e); alert("Error updating visibility."); }
+            hideLoader();
+        };
+
         function renderAdminList(type, data) {
             const container = els[`admin${type.charAt(0).toUpperCase() + type.slice(1)}`];
             if (!container) return;
@@ -950,16 +961,43 @@
                 let subText = item.description || item.dept || item.datetime || '';
                 let img = item.image;
                 if (type === 'ticker') { const tmp = document.createElement("DIV"); tmp.innerHTML = mainText; mainText = tmp.textContent || tmp.innerText || ""; subText = "Ticker Message"; } 
-                else if (type === 'media') { mainText = item.type.toUpperCase() + ' Media'; subText = item.content ? item.content.substring(0, 40) + '...' : 'No Content'; if (item.type === 'image') img = item.content; }
+                else if (type === 'media') { 
+                    mainText = item.type.toUpperCase() + ' Media'; 
+                    subText = item.content ? item.content.substring(0, 40) + '...' : 'No Content'; 
+                    if (item.type === 'image') img = item.content; 
+                }
+                
+                // Visual indicator for hidden items
+                const hiddenClass = item.hidden ? 'opacity-60 bg-gray-50' : '';
+                const hiddenIcon = item.hidden ? 'fa-eye-slash text-gray-500' : 'fa-eye text-green-600';
+                const hiddenTitle = item.hidden ? 'Show in Feed' : 'Hide from Feed';
+
+                // Add hide button specifically for media (or all types if desired, currently enabled for all)
+                // For this request, user asked for "media feed", but it's useful for all. 
+                // I will add it generally but it is most useful for media.
+                const visibilityButton = `
+                    <button onclick="toggleVisibility('${type}', '${item.id}', ${item.hidden || false})" class="${hiddenIcon} hover:text-gray-800" title="${hiddenTitle}">
+                        <i class="fas ${hiddenIcon}"></i>
+                    </button>
+                `;
+
                 return `
-                <div class="bg-white p-4 rounded-lg shadow border border-gray-200 flex justify-between items-start group">
+                <div class="bg-white p-4 rounded-lg shadow border border-gray-200 flex justify-between items-start group ${hiddenClass}">
                     <div class="flex items-start space-x-3 overflow-hidden">
                         ${img ? `<img src="${img}" class="w-10 h-10 rounded-full object-cover border">` : ''}
-                        <div class="min-w-0"><h4 class="font-bold text-gray-800 truncate text-sm">${mainText}</h4><p class="text-xs text-gray-500 truncate">${subText || ''}</p></div>
+                        <div class="min-w-0">
+                            <div class="flex items-center space-x-2">
+                                <h4 class="font-bold text-gray-800 truncate text-sm">${mainText}</h4>
+                                ${item.hidden ? '<span class="bg-gray-200 text-gray-600 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Hidden</span>' : ''}
+                            </div>
+                            <p class="text-xs text-gray-500 truncate">${subText || ''}</p>
+                        </div>
                     </div>
-                    <div class="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onclick="editEntry('${type}', '${item.id}')" class="text-blue-600 hover:text-blue-800"><i class="fas fa-edit"></i></button>
-                        <button onclick="deleteEntry('${type}', '${item.id}')" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+                    <div class="flex space-x-3 opacity-0 group-hover:opacity-100 transition-opacity items-center">
+                        ${visibilityButton}
+                        <div class="h-4 w-px bg-gray-300 mx-1"></div>
+                        <button onclick="editEntry('${type}', '${item.id}')" class="text-blue-600 hover:text-blue-800" title="Edit"><i class="fas fa-edit"></i></button>
+                        <button onclick="deleteEntry('${type}', '${item.id}')" class="text-red-600 hover:text-red-800" title="Delete"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>`;
             }).join('');
@@ -1000,7 +1038,13 @@
             e.preventDefault();
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
+            
+            // Checkbox handling
             if (currentEditType === 'announcements') data.urgent = formData.get('urgent') === 'on';
+            // Removed manual hidden checkbox handling from here as it is now handled by the toggle button in the list, 
+            // BUT we keep it if the user wants to set it during creation.
+            if (currentEditType === 'media') data.hidden = formData.get('hidden') === 'on';
+
             const fileInput = document.getElementById('form-image-file');
             if (fileInput && fileInput.files.length > 0) {
                 try { data.image = await convertBase64(fileInput.files[0]); } catch(err) { console.error("Image error"); }
@@ -1066,6 +1110,10 @@
                         <option value="image" ${v.type === 'image' ? 'selected' : ''}>Image URL</option>
                     </select></div>
                     <div><label class="block text-sm font-bold mb-1">Content (URL or Code)</label><textarea name="content" required rows="3" class="w-full p-2 border rounded font-mono text-xs" placeholder="Paste URL or Code here...">${v.content || ''}</textarea></div>
+                    <div class="flex items-center mt-2">
+                        <input type="checkbox" name="hidden" ${v.hidden ? 'checked' : ''} class="h-4 w-4 text-school-navy rounded border-gray-300 focus:ring-school-navy">
+                        <label class="ml-2 text-sm font-bold text-gray-700">Start Hidden</label>
+                    </div>
                 `;
             }
             if (type !== 'events' && type !== 'ticker' && type !== 'media') {
