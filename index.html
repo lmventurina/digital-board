@@ -806,10 +806,12 @@
                                 'modestbranding': 1, 
                                 'mute': 0, 
                                 'origin': origin, 
-                                'enablejsapi': 1 
+                                'enablejsapi': 1,
+                                'iv_load_policy': 3 // Removes video annotations/popups
                             },
                             events: {
                                 'onReady': (event) => { event.target.playVideo(); },
+                                // event.data === 0 is YT.PlayerState.ENDED. This ensures we wait for video to finish.
                                 'onStateChange': (event) => { if (event.data === 0) { config.index = (config.index + 1) % data.length; showSlide(); } },
                                 'onError': (e) => { 
                                     console.warn("Skipping restricted/unavailable video."); 
@@ -818,6 +820,7 @@
                                 }
                             }
                         });
+                        // Fallback timer: Force next slide after 10 minutes if video gets stuck or is infinite
                         config.timer = setTimeout(() => { config.index = (config.index + 1) % data.length; showSlide(); }, 600000); 
                     } else {
                         slide.innerHTML = `<p class="text-red-500">Video Loading...</p>`;
