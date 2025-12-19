@@ -34,7 +34,7 @@
 
     <!-- Custom CSS -->
     <style>
-        body { overflow: hidden; }
+        body { overflow: hidden; background-size: cover; background-position: center; transition: background-image 0.5s ease-in-out; }
         .school-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
         .ticker-wrap { width: 100%; overflow: hidden; background-color: #facc15; padding-left: 100%; box-sizing: content-box; }
         .ticker-move { display: inline-block; white-space: nowrap; padding-right: 100%; box-sizing: content-box; animation: ticker 20s linear infinite; }
@@ -49,44 +49,55 @@
         .fade-exit-active { opacity: 0; transition: opacity 500ms ease-out; }
         .aspect-circle { aspect-ratio: 1 / 1; }
         iframe { width: 100%; height: 100%; border: none; }
+        
+        /* Glassmorphism utility */
+        .glass-panel {
+            background: rgba(0, 56, 147, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
     </style>
 </head>
 <body class="bg-gray-100 h-screen flex flex-col font-sans text-gray-800">
+    
+    <!-- Dark overlay for background image readability -->
+    <div class="fixed inset-0 bg-gray-900/10 z-0 pointer-events-none"></div>
 
-    <!-- Header -->
-    <header class="bg-school-navy text-white pt-3 px-4 pb-2 shadow-lg z-10 flex-none flex flex-col">
+    <!-- Header with Glassmorphism -->
+    <header class="glass-panel text-white pt-3 px-4 pb-2 shadow-lg z-10 flex-none flex flex-col relative">
         <div class="flex justify-between items-center mb-1">
             <!-- Logo & School Info -->
             <div class="flex items-center space-x-4 w-1/3">
-                <div class="h-20 w-20 bg-white rounded-full flex-none flex items-center justify-center border-4 border-school-gold overflow-hidden school-logo-container relative">
+                <div class="h-20 w-20 bg-white/90 rounded-full flex-none flex items-center justify-center border-4 border-school-gold overflow-hidden school-logo-container relative shadow-md">
                     <img id="header-logo" src="https://placehold.co/100x100?text=Logo" alt="School Logo" class="h-full w-full object-cover">
                 </div>
-                <div class="min-w-0">
+                <div class="min-w-0 drop-shadow-md">
                     <h1 id="header-school-name" class="text-3xl font-display font-extrabold tracking-wide uppercase whitespace-nowrap overflow-visible">Navajo Pine HS</h1>
                     <p id="header-subtitle" class="text-school-gold font-semibold text-lg leading-tight">School of Technology</p>
                 </div>
             </div>
 
             <!-- Clock & Date -->
-            <div class="text-center w-1/3">
+            <div class="text-center w-1/3 drop-shadow-md">
                 <div id="live-time" class="text-5xl font-display font-bold tabular-nums leading-none">--:--</div>
-                <div id="live-date" class="text-lg text-gray-200 mt-1 uppercase tracking-wider leading-none">Fetching Date...</div>
+                <div id="live-date" class="text-lg text-gray-100 mt-1 uppercase tracking-wider leading-none">Fetching Date...</div>
             </div>
 
-            <!-- Weather Widget -->
+            <!-- Weather Widget (Nested Glass) -->
             <div class="w-1/3 flex justify-end">
-                <div class="bg-blue-900/70 rounded-xl p-3 backdrop-blur-sm border border-blue-700/50 flex flex-col min-w-[350px]">
+                <div class="bg-blue-900/30 backdrop-blur-xl rounded-xl p-3 border border-white/20 shadow-2xl flex flex-col min-w-[350px]">
                     <!-- Location Header -->
-                    <div class="text-center border-b border-blue-500/30 pb-2 mb-2">
-                        <span id="weather-city" class="text-xs font-bold text-white uppercase tracking-widest">Loading...</span>
+                    <div class="text-center border-b border-white/10 pb-2 mb-2">
+                        <span id="weather-city" class="text-xl font-bold text-white uppercase tracking-widest drop-shadow-md">Loading...</span>
                     </div>
 
                     <div class="flex items-center justify-between">
                         <!-- Today Column -->
-                        <div class="flex flex-col items-center justify-center px-2 border-r border-blue-700/50 w-1/4">
-                            <span class="text-[10px] text-school-gold font-bold uppercase mb-1">Today</span>
-                            <div class="text-2xl my-1 text-school-gold" id="weather-current-icon"><i class="fas fa-cloud"></i></div>
-                            <span id="weather-current-temp" class="text-base font-bold leading-none">--°</span>
+                        <div class="flex flex-col items-center justify-center px-2 border-r border-white/10 w-1/4">
+                            <span class="text-[10px] text-school-gold font-bold uppercase mb-1 drop-shadow-md">Today</span>
+                            <div class="text-2xl my-1 text-school-gold drop-shadow-md" id="weather-current-icon"><i class="fas fa-cloud"></i></div>
+                            <span id="weather-current-temp" class="text-base font-bold leading-none text-white drop-shadow-md">--°</span>
                         </div>
                         
                         <!-- Forecast Columns -->
@@ -99,13 +110,13 @@
         </div>
 
         <!-- Subtitle 2: Full Width -->
-        <div class="w-full text-center border-t border-white/10 pt-2 mt-1">
-            <p id="header-subtitle-2" class="text-gray-300 font-medium text-sm tracking-[0.2em] uppercase">Home of the Tech Warriors</p>
+        <div class="w-full text-center border-t border-white/10 pt-2 mt-1 drop-shadow-md">
+            <p id="header-subtitle-2" class="text-gray-200 font-medium text-sm tracking-[0.2em] uppercase">Home of the Tech Warriors</p>
         </div>
     </header>
 
     <!-- Ticker -->
-    <div class="bg-school-gold text-school-navy font-bold py-4 text-3xl border-b-4 border-school-navy/20 flex-none z-10 relative shadow-md w-full overflow-hidden">
+    <div class="bg-school-gold/95 backdrop-blur-sm text-school-navy font-bold py-4 text-3xl border-b-4 border-school-navy/40 flex-none z-10 relative shadow-md w-full overflow-hidden">
         <div class="ticker-wrap">
             <div class="ticker-move" id="ticker-content">
                 Welcome to our digital bulletin board! Go Tigers!
@@ -114,15 +125,15 @@
     </div>
 
     <!-- Main Container -->
-    <main class="flex-grow p-2 overflow-hidden flex flex-col md:flex-row gap-3">
+    <main class="flex-grow p-2 overflow-hidden flex flex-col md:flex-row gap-3 relative z-0">
         
         <!-- Main Grid (75%) -->
         <div class="w-full md:w-3/4 h-full">
             <div class="grid grid-cols-1 md:grid-cols-2 grid-rows-2 gap-3 h-full">
                 
                 <!-- Top Left: Student Spotlight -->
-                <div class="bg-gradient-to-br from-white to-blue-100 rounded-2xl school-shadow border border-gray-200 flex flex-col overflow-hidden relative group">
-                    <div class="bg-school-navy py-2 px-4 text-center">
+                <div class="bg-white/90 backdrop-blur-sm rounded-2xl school-shadow border border-white/40 flex flex-col overflow-hidden relative group">
+                    <div class="bg-school-navy/90 py-2 px-4 text-center">
                         <h2 class="text-white font-display font-bold text-xl"><i class="fas fa-star text-school-gold mr-2"></i> Student Spotlight</h2>
                     </div>
                     <!-- Reduced padding from p-6 to p-2 to fit content better -->
@@ -133,8 +144,8 @@
                 </div>
 
                 <!-- Top Right: Teacher Feature -->
-                <div class="bg-gradient-to-br from-white to-yellow-100 rounded-2xl school-shadow border border-gray-200 flex flex-col overflow-hidden relative">
-                    <div class="bg-school-navy py-2 px-4 text-center">
+                <div class="bg-white/90 backdrop-blur-sm rounded-2xl school-shadow border border-white/40 flex flex-col overflow-hidden relative">
+                    <div class="bg-school-navy/90 py-2 px-4 text-center">
                         <h2 class="text-white font-display font-bold text-xl"><i class="fas fa-chalkboard-teacher text-school-gold mr-2"></i> Teacher/Staff Feature</h2>
                     </div>
                     <!-- Reduced padding from p-6 to p-2 -->
@@ -145,8 +156,8 @@
                 </div>
 
                 <!-- Bottom Left: Announcements -->
-                <div class="bg-gradient-to-br from-white to-blue-50 rounded-2xl school-shadow border border-gray-200 flex flex-col overflow-hidden relative">
-                    <div class="bg-school-navy py-2 px-4 text-center">
+                <div class="bg-white/90 backdrop-blur-sm rounded-2xl school-shadow border border-white/40 flex flex-col overflow-hidden relative">
+                    <div class="bg-school-navy/90 py-2 px-4 text-center">
                         <h2 class="text-white font-display font-bold text-xl"><i class="fas fa-bullhorn text-school-gold mr-2"></i> Announcements</h2>
                     </div>
                     <!-- Reduced padding from p-6 to p-2 -->
@@ -157,8 +168,8 @@
                 </div>
 
                 <!-- Bottom Right: Media Feed -->
-                <div class="bg-black rounded-2xl school-shadow border border-gray-200 flex flex-col overflow-hidden relative" id="media-slot-main">
-                    <div class="bg-school-navy py-2 px-4">
+                <div class="bg-black rounded-2xl school-shadow border border-gray-600 flex flex-col overflow-hidden relative" id="media-slot-main">
+                    <div class="bg-school-navy/90 py-2 px-4">
                         <h3 class="text-white font-display font-bold text-xl"><i class="fas fa-photo-video text-school-gold mr-2"></i> Media Feed</h3>
                     </div>
                     <div class="flex-grow bg-black relative" id="media-carousel">
@@ -177,8 +188,8 @@
 
         <!-- Sidebar / Aside (25%) - Upcoming Events -->
         <aside class="w-full md:w-1/4 h-full flex flex-col">
-            <div class="bg-gradient-to-br from-white to-gray-200 rounded-2xl school-shadow border border-gray-200 flex flex-col overflow-hidden h-full">
-                <div class="bg-school-navy py-2 px-4 flex justify-between items-center">
+            <div class="bg-white/90 backdrop-blur-sm rounded-2xl school-shadow border border-white/40 flex flex-col overflow-hidden h-full">
+                <div class="bg-school-navy/90 py-2 px-4 flex justify-between items-center">
                     <h2 class="text-white font-display font-bold text-xl"><i class="fas fa-calendar-alt text-school-gold mr-2"></i> Events</h2>
                     <span class="text-xs text-white bg-blue-800 px-2 py-1 rounded">Upcoming</span>
                 </div>
@@ -413,6 +424,18 @@
                                             <input type="file" id="conf-logo-file" accept="image/*" class="text-sm block w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-school-navy/10 file:text-school-navy hover:file:bg-school-navy/20">
                                         </div>
                                         <p class="text-xs text-gray-500 mt-1 ml-20">Upload a square image (PNG/JPG). Max 1MB (Firestore limit).</p>
+                                    </div>
+                                    
+                                    <!-- Background Image Upload Section -->
+                                    <div class="md:col-span-2 border-t pt-4 mt-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Background Image</label>
+                                        <div class="flex items-center space-x-4">
+                                            <div class="h-16 w-16 bg-gray-200 rounded-lg border flex items-center justify-center overflow-hidden flex-none">
+                                                 <img id="conf-bg-preview" src="https://placehold.co/100x100?text=BG" class="h-full w-full object-cover">
+                                            </div>
+                                            <input type="file" id="conf-bg-file" accept="image/*" class="text-sm block w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-school-navy/10 file:text-school-navy hover:file:bg-school-navy/20">
+                                        </div>
+                                        <p class="text-xs text-gray-500 mt-1 ml-20">Upload a background image (PNG/JPG). Max 1MB (Firestore limit). If empty, solid color is used.</p>
                                     </div>
 
                                 </div>
@@ -721,33 +744,8 @@
 
             listen(COLLECTIONS.ANNOUNCEMENTS, (data) => {
                 appData.announcements = data;
-                
-                // Filter logic for Scheduling
-                const now = new Date();
-                now.setHours(0,0,0,0); // Compare based on date only, not time
-
-                const visible = data.filter(item => {
-                    // 1. Check manual hide
-                    if (item.hidden) return false;
-
-                    // 2. Check Start Date
-                    if (item.startDate) {
-                        const start = new Date(item.startDate);
-                        // Fix timezone offset
-                        start.setMinutes(start.getMinutes() + start.getTimezoneOffset());
-                        if (start > now) return false; // Future event
-                    }
-
-                    // 3. Check End Date
-                    if (item.endDate) {
-                        const end = new Date(item.endDate);
-                        end.setMinutes(end.getMinutes() + end.getTimezoneOffset());
-                        if (end < now) return false; // Expired event
-                    }
-
-                    return true;
-                });
-
+                // Filter out hidden items
+                const visible = data.filter(item => !item.hidden);
                 renderCarousel('announcement', visible);
                 renderAdminList('announcements', data);
             });
@@ -829,6 +827,11 @@
             if(settings.logo) {
                 document.getElementById('header-logo').src = settings.logo;
             }
+            if(settings.background) {
+                document.body.style.backgroundImage = `url('${settings.background}')`;
+            } else {
+                document.body.style.backgroundImage = ''; // Clear inline style to revert to class
+            }
             
             // Updated to populate WYSIWYG editors
             const confName = document.getElementById('editor-conf-name');
@@ -841,6 +844,10 @@
 
             els.confLocation.value = settings.location || "";
             els.confCalendar.value = settings.googleCalendar || "";
+            
+            if(settings.background) {
+                document.getElementById('conf-bg-preview').src = settings.background;
+            }
             
             // Call API functions
             fetchWeather(settings.location);
@@ -917,6 +924,7 @@
                 if (u.hostname.includes('youtube.com')) {
                     if (u.searchParams.has('v')) videoId = u.searchParams.get('v');
                     else if (u.pathname.includes('/shorts/')) videoId = u.pathname.split('/shorts/')[1];
+                    else if (u.pathname.includes('/live/')) videoId = u.pathname.split('/live/')[1]; // Added support for /live/ links
                     else if (u.pathname.includes('/embed/')) videoId = u.pathname.split('/embed/')[1];
                 } else if (u.hostname.includes('youtu.be')) {
                     videoId = u.pathname.slice(1);
@@ -1127,6 +1135,11 @@
                 const logoFile = document.getElementById('conf-logo-file').files[0];
                 let logoBase64 = appData.settings?.logo || "";
                 if (logoFile) { try { logoBase64 = await convertBase64(logoFile); } catch (err) { console.error(err); } }
+
+                // Handle background image upload
+                const bgFile = document.getElementById('conf-bg-file').files[0];
+                let bgBase64 = appData.settings?.background || "";
+                if (bgFile) { try { bgBase64 = await convertBase64(bgFile); } catch (err) { console.error(err); } }
                 
                 // Get data from WYSIWYG editors
                 const conf = {
@@ -1135,7 +1148,8 @@
                     subtitle2: document.getElementById('editor-conf-subtitle-2').innerHTML,
                     location: els.confLocation.value,
                     googleCalendar: els.confCalendar.value,
-                    logo: logoBase64
+                    logo: logoBase64,
+                    background: bgBase64
                 };
                 if (appData.settingsId) await updateDoc(doc(getCollectionRef(COLLECTIONS.SETTINGS), appData.settingsId), conf);
                 else await addDoc(getCollectionRef(COLLECTIONS.SETTINGS), conf);
@@ -1155,6 +1169,46 @@
             hideLoader();
         };
 
+        // Function to move item up or down in the list
+        window.moveItem = async (type, id, direction) => {
+            showLoader();
+            try {
+                const collectionData = [...appData[type]];
+                // Ensure items have an order property
+                collectionData.forEach((item, index) => {
+                    if (item.order === undefined) item.order = index;
+                });
+                
+                // Sort by current order to be safe
+                collectionData.sort((a, b) => a.order - b.order);
+
+                const currentIndex = collectionData.findIndex(item => item.id === id);
+                if (currentIndex === -1) { hideLoader(); return; }
+
+                const targetIndex = currentIndex + direction; // -1 for up, +1 for down
+
+                // Check bounds
+                if (targetIndex < 0 || targetIndex >= collectionData.length) {
+                    hideLoader();
+                    return;
+                }
+
+                // Swap order values
+                const currentItem = collectionData[currentIndex];
+                const targetItem = collectionData[targetIndex];
+
+                const tempOrder = currentItem.order;
+                currentItem.order = targetItem.order;
+                targetItem.order = tempOrder;
+
+                // Update both documents in Firestore
+                await updateDoc(doc(getCollectionRef(type), currentItem.id), { order: currentItem.order });
+                await updateDoc(doc(getCollectionRef(type), targetItem.id), { order: targetItem.order });
+
+            } catch(e) { console.error(e); alert("Error moving item."); }
+            hideLoader();
+        };
+
         function renderAdminList(type, data) {
             const container = els[`admin${type.charAt(0).toUpperCase() + type.slice(1)}`];
             if (!container) return;
@@ -1163,7 +1217,7 @@
             const now = new Date();
             now.setHours(0,0,0,0);
 
-            container.innerHTML = data.map(item => {
+            container.innerHTML = data.map((item, index) => {
                 let mainText = item.title || item.name || item.text;
                 let subText = item.description || item.dept || item.datetime || '';
                 let img = item.image;
@@ -1227,6 +1281,19 @@
                     </button>
                 `;
 
+                // Order Buttons
+                const upButton = index > 0 ? `
+                    <button onclick="moveItem('${type}', '${item.id}', -1)" class="text-gray-500 hover:text-school-navy" title="Move Up">
+                        <i class="fas fa-arrow-up"></i>
+                    </button>
+                ` : `<span class="w-4"></span>`; // Spacer
+
+                const downButton = index < data.length - 1 ? `
+                    <button onclick="moveItem('${type}', '${item.id}', 1)" class="text-gray-500 hover:text-school-navy" title="Move Down">
+                        <i class="fas fa-arrow-down"></i>
+                    </button>
+                ` : `<span class="w-4"></span>`; // Spacer
+
                 return `
                 <div class="bg-white p-4 rounded-lg shadow border border-gray-200 flex justify-between items-start group ${hiddenClass}">
                     <div class="flex items-start space-x-3 overflow-hidden">
@@ -1241,8 +1308,14 @@
                         </div>
                     </div>
                     <div class="flex space-x-3 opacity-0 group-hover:opacity-100 transition-opacity items-center">
+                        <!-- Order Controls -->
+                        <div class="flex flex-col space-y-1 items-center mr-2">
+                            ${upButton}
+                            ${downButton}
+                        </div>
+                        <div class="h-8 w-px bg-gray-200 mx-1"></div>
+                        
                         ${visibilityButton}
-                        <div class="h-4 w-px bg-gray-300 mx-1"></div>
                         <button onclick="editEntry('${type}', '${item.id}')" class="text-blue-600 hover:text-blue-800" title="Edit"><i class="fas fa-edit"></i></button>
                         <button onclick="deleteEntry('${type}', '${item.id}')" class="text-red-600 hover:text-red-800" title="Delete"><i class="fas fa-trash"></i></button>
                     </div>
