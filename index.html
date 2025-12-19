@@ -65,7 +65,7 @@
     <div class="fixed inset-0 bg-gray-900/10 z-0 pointer-events-none"></div>
 
     <!-- Header with Glassmorphism -->
-    <header class="glass-panel text-white pt-3 px-4 pb-2 shadow-lg z-10 flex-none flex flex-col relative">
+    <header id="main-header" class="glass-panel text-white pt-3 px-4 pb-2 shadow-lg z-10 flex-none flex flex-col relative">
         <div class="flex justify-between items-center mb-1">
             <!-- Logo & School Info -->
             <div class="flex items-center space-x-4 w-1/3">
@@ -426,16 +426,16 @@
                                         <p class="text-xs text-gray-500 mt-1 ml-20">Upload a square image (PNG/JPG). Max 1MB (Firestore limit).</p>
                                     </div>
                                     
-                                    <!-- Background Image Upload Section -->
+                                    <!-- Header Background Image Upload Section (Replaced Background Image) -->
                                     <div class="md:col-span-2 border-t pt-4 mt-2">
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Background Image</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Header Background Image</label>
                                         <div class="flex items-center space-x-4">
                                             <div class="h-16 w-16 bg-gray-200 rounded-lg border flex items-center justify-center overflow-hidden flex-none">
-                                                 <img id="conf-bg-preview" src="https://placehold.co/100x100?text=BG" class="h-full w-full object-cover">
+                                                 <img id="conf-header-bg-preview" src="https://placehold.co/100x100?text=Header" class="h-full w-full object-cover">
                                             </div>
-                                            <input type="file" id="conf-bg-file" accept="image/*" class="text-sm block w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-school-navy/10 file:text-school-navy hover:file:bg-school-navy/20">
+                                            <input type="file" id="conf-header-bg-file" accept="image/*" class="text-sm block w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-school-navy/10 file:text-school-navy hover:file:bg-school-navy/20">
                                         </div>
-                                        <p class="text-xs text-gray-500 mt-1 ml-20">Upload a background image (PNG/JPG). Max 1MB (Firestore limit). If empty, solid color is used.</p>
+                                        <p class="text-xs text-gray-500 mt-1 ml-20">Upload a header background image (PNG/JPG). Max 1MB. Replaces standard blue glass look.</p>
                                     </div>
 
                                 </div>
@@ -785,7 +785,7 @@
                          els.ticker.innerHTML = "Welcome to School Board";
                     }
                 } else {
-                     els.ticker.innerHTML = "Welcome to School Board";
+                      els.ticker.innerHTML = "Welcome to School Board";
                 }
                 renderAdminList('ticker', data);
             });
@@ -827,10 +827,15 @@
             if(settings.logo) {
                 document.getElementById('header-logo').src = settings.logo;
             }
-            if(settings.background) {
-                document.body.style.backgroundImage = `url('${settings.background}')`;
+            
+            // Updated: Set Header Background instead of Body Background
+            const headerEl = document.getElementById('main-header');
+            if(settings.headerBackground) {
+                headerEl.style.backgroundImage = `url('${settings.headerBackground}')`;
+                headerEl.style.backgroundSize = 'cover';
+                headerEl.style.backgroundPosition = 'center';
             } else {
-                document.body.style.backgroundImage = ''; // Clear inline style to revert to class
+                headerEl.style.backgroundImage = ''; 
             }
             
             // Updated to populate WYSIWYG editors
@@ -845,8 +850,8 @@
             els.confLocation.value = settings.location || "";
             els.confCalendar.value = settings.googleCalendar || "";
             
-            if(settings.background) {
-                document.getElementById('conf-bg-preview').src = settings.background;
+            if(settings.headerBackground) {
+                document.getElementById('conf-header-bg-preview').src = settings.headerBackground;
             }
             
             // Call API functions
@@ -1136,10 +1141,10 @@
                 let logoBase64 = appData.settings?.logo || "";
                 if (logoFile) { try { logoBase64 = await convertBase64(logoFile); } catch (err) { console.error(err); } }
 
-                // Handle background image upload
-                const bgFile = document.getElementById('conf-bg-file').files[0];
-                let bgBase64 = appData.settings?.background || "";
-                if (bgFile) { try { bgBase64 = await convertBase64(bgFile); } catch (err) { console.error(err); } }
+                // Handle Header background image upload
+                const headerBgFile = document.getElementById('conf-header-bg-file').files[0];
+                let headerBgBase64 = appData.settings?.headerBackground || "";
+                if (headerBgFile) { try { headerBgBase64 = await convertBase64(headerBgFile); } catch (err) { console.error(err); } }
                 
                 // Get data from WYSIWYG editors
                 const conf = {
@@ -1149,7 +1154,7 @@
                     location: els.confLocation.value,
                     googleCalendar: els.confCalendar.value,
                     logo: logoBase64,
-                    background: bgBase64
+                    headerBackground: headerBgBase64 // Changed key
                 };
                 if (appData.settingsId) await updateDoc(doc(getCollectionRef(COLLECTIONS.SETTINGS), appData.settingsId), conf);
                 else await addDoc(getCollectionRef(COLLECTIONS.SETTINGS), conf);
@@ -1350,7 +1355,7 @@
             '👩‍🦱', '🧑‍🦱', '👨‍🦱', '👩‍🦰', '🧑‍🦰', '👨‍🦰', '👱‍♀️', '👱', '👱‍♂️', '👩‍🦳',
             '🧑‍🦳', '👨‍🦳', '👩‍🦲', '🧑‍🦲', '👨‍🦲', '🧔', '👵', '🧓', '👴', '👲',
             '👳‍♀️', '👳', '👳‍♂️', '🧕', '👮‍♀️', '👮', '👮‍♂️', '👷‍♀️', '👷', '👷‍♂️',
-            '💂‍♀️', '💂', '💂‍♂️', '🕵️‍♀️', '🕵️', '🕵️‍♂️', '👩‍⚕️', '🧑‍⚕️', '👨‍⚕️', '👩‍🌾',
+            '💂‍♀️', '💂', '💂‍♂️', '🕵️‍♀️', '🕵', '🕵️‍♂️', '👩‍⚕️', '🧑‍⚕️', '👨‍⚕️', '👩‍🌾',
             '🧑‍🌾', '👨‍🌾', '👩‍🍳', '🧑‍🍳', '👨‍🍳', '👩‍🎓', '🧑‍🎓', '👨‍🎓', '👩‍🎤', '🧑‍🎤',
             '👨‍🎤', '👩‍🏫', '🧑‍🏫', '👨‍🏫', '👩‍🏭', '🧑‍🏭', '👨‍🏭', '👩‍💻', '🧑‍💻', '👨‍💻',
             '👩‍💼', '🧑‍💼', '👨‍💼', '👩‍🔧', '🧑‍🔧', '👨‍🔧', '👩‍🔬', '🧑‍🔬', '👨‍🔬', '👩‍🎨',
@@ -1368,7 +1373,7 @@
             '🧎', '🧎‍♂️', '🏃‍♀️', '🏃', '🏃‍♂️', '🧍‍♀️', '🧍', '🧍‍♂️', '👭', '🧑‍🤝‍🧑',
             '👬', '👫', '🧗‍♀️', '🧗', '🧗‍♂️', '🤺', '🏇', '⛷', '🏂', '🏌️‍♀️',
             '🏌️', '🏌️‍♂️', '🏄‍♀️', '🏄', '🏄‍♂️', '🚣‍♀️', '🚣', '🚣‍♂️', '🏊‍♀️', '🏊',
-            '🏊‍♂️', '⛹️‍♀️', '⛹️', '⛹️‍♂️', '🏋️‍♀️', '🏋️', '🏋️‍♂️', '🚴‍♀️', '🚴', '🚴‍♂️',
+            '🏊‍♂️', '⛹️‍♀️', '⛹️', '⛹️‍♂️', '🏋️‍♀️', '🏋', '🏋️‍♂️', '🚴‍♀️', '🚴', '🚴‍♂️',
             '🚵‍♀️', '🚵', '🚵‍♂️', '🤸‍♀️', '🤸', '🤸‍♂️', '🤼‍♀️', '🤼', '🤼‍♂️', '🤽‍♀️',
             '🤽', '🤽‍♂️', '🤾‍♀️', '🤾', '🤾‍♂️', '🤹‍♀️', '🤹', '🤹‍♂️', '🧘‍♀️', '🧘',
             '🧘‍♂️', '🛀', '🛌', '👭', '🧑‍🤝‍🧑', '👬', '👫', '💏', '💑', '👪',
