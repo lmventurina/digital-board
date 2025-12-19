@@ -69,7 +69,6 @@
 
             <!-- Clock & Date -->
             <div class="text-center w-1/3">
-                <!-- Removed hardcoded 12:00 PM to prevent flash of wrong time -->
                 <div id="live-time" class="text-5xl font-display font-bold tabular-nums leading-none">--:--</div>
                 <div id="live-date" class="text-lg text-gray-200 mt-1 uppercase tracking-wider leading-none">Fetching Date...</div>
             </div>
@@ -960,11 +959,26 @@
                 let mainText = item.title || item.name || item.text;
                 let subText = item.description || item.dept || item.datetime || '';
                 let img = item.image;
-                if (type === 'ticker') { const tmp = document.createElement("DIV"); tmp.innerHTML = mainText; mainText = tmp.textContent || tmp.innerText || ""; subText = "Ticker Message"; } 
+                
+                // Content specific formatting
+                if (type === 'ticker') { 
+                    const tmp = document.createElement("DIV"); 
+                    tmp.innerHTML = mainText; 
+                    mainText = tmp.textContent || tmp.innerText || ""; 
+                    subText = "Ticker Message"; 
+                } 
                 else if (type === 'media') { 
                     mainText = item.type.toUpperCase() + ' Media'; 
                     subText = item.content ? item.content.substring(0, 40) + '...' : 'No Content'; 
                     if (item.type === 'image') img = item.content; 
+                } else if (type === 'events') {
+                    // Format date for better readability in list
+                    if (item.datetime) {
+                        const dateObj = new Date(item.datetime);
+                        // Fix timezone offset for display
+                        dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
+                        subText = dateObj.toLocaleDateString() + (item.location ? ` - ${item.location}` : '');
+                    }
                 }
                 
                 // Visual indicator for hidden items
@@ -972,9 +986,7 @@
                 const hiddenIcon = item.hidden ? 'fa-eye-slash text-gray-500' : 'fa-eye text-green-600';
                 const hiddenTitle = item.hidden ? 'Show in Feed' : 'Hide from Feed';
 
-                // Add hide button specifically for media (or all types if desired, currently enabled for all)
-                // For this request, user asked for "media feed", but it's useful for all. 
-                // I will add it generally but it is most useful for media.
+                // Visibility Toggle Button (Universal for all types)
                 const visibilityButton = `
                     <button onclick="toggleVisibility('${type}', '${item.id}', ${item.hidden || false})" class="${hiddenIcon} hover:text-gray-800" title="${hiddenTitle}">
                         <i class="fas ${hiddenIcon}"></i>
@@ -1038,13 +1050,7 @@
             e.preventDefault();
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
-            
-            // Checkbox handling
             if (currentEditType === 'announcements') data.urgent = formData.get('urgent') === 'on';
-            // Removed manual hidden checkbox handling from here as it is now handled by the toggle button in the list, 
-            // BUT we keep it if the user wants to set it during creation.
-            if (currentEditType === 'media') data.hidden = formData.get('hidden') === 'on';
-
             const fileInput = document.getElementById('form-image-file');
             if (fileInput && fileInput.files.length > 0) {
                 try { data.image = await convertBase64(fileInput.files[0]); } catch(err) { console.error("Image error"); }
