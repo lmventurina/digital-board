@@ -53,13 +53,15 @@
         /* Glassmorphism utility */
         .glass-panel {
             background: rgba(0, 56, 147, 0.65);
+            /* Added gradient support for glass panel */
+            background-image: linear-gradient(to right, rgba(0, 56, 147, 0.8), rgba(30, 58, 138, 0.8));
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
-<body class="bg-gray-100 h-screen flex flex-col font-sans text-gray-800">
+<body class="bg-gradient-to-br from-gray-50 to-gray-200 h-screen flex flex-col font-sans text-gray-800">
     
     <!-- Dark overlay for background image readability -->
     <div class="fixed inset-0 bg-gray-900/10 z-0 pointer-events-none"></div>
@@ -116,8 +118,8 @@
     </header>
 
     <!-- Ticker -->
-    <div class="bg-school-gold/95 backdrop-blur-sm text-school-navy font-bold py-4 text-3xl border-b-4 border-school-navy/40 flex-none z-10 relative shadow-md w-full overflow-hidden">
-        <div class="ticker-wrap">
+    <div class="bg-gradient-to-r from-school-gold via-yellow-400 to-school-gold backdrop-blur-sm text-school-navy font-bold py-4 text-3xl border-b-4 border-school-navy/40 flex-none z-10 relative shadow-md w-full overflow-hidden">
+        <div class="ticker-wrap bg-transparent">
             <div class="ticker-move" id="ticker-content">
                 Welcome to our digital bulletin board! Go Tigers!
             </div>
@@ -132,8 +134,8 @@
             <div class="grid grid-cols-1 md:grid-cols-2 grid-rows-2 gap-3 h-full">
                 
                 <!-- Top Left: Student Spotlight -->
-                <div class="bg-white/90 backdrop-blur-sm rounded-2xl school-shadow border border-white/40 flex flex-col overflow-hidden relative group">
-                    <div class="bg-school-navy/90 py-2 px-4 text-center">
+                <div class="bg-gradient-to-br from-white/95 to-blue-100/90 backdrop-blur-sm rounded-2xl school-shadow border border-white/40 flex flex-col overflow-hidden relative group">
+                    <div class="bg-gradient-to-r from-school-navy to-blue-800 py-2 px-4 text-center">
                         <h2 class="text-white font-display font-bold text-xl"><i class="fas fa-star text-school-gold mr-2"></i> Student Spotlight</h2>
                     </div>
                     <!-- Reduced padding from p-6 to p-2 to fit content better -->
@@ -144,8 +146,8 @@
                 </div>
 
                 <!-- Top Right: Teacher Feature -->
-                <div class="bg-white/90 backdrop-blur-sm rounded-2xl school-shadow border border-white/40 flex flex-col overflow-hidden relative">
-                    <div class="bg-school-navy/90 py-2 px-4 text-center">
+                <div class="bg-gradient-to-br from-white/95 to-blue-100/90 backdrop-blur-sm rounded-2xl school-shadow border border-white/40 flex flex-col overflow-hidden relative">
+                    <div class="bg-gradient-to-r from-school-navy to-blue-800 py-2 px-4 text-center">
                         <h2 class="text-white font-display font-bold text-xl"><i class="fas fa-chalkboard-teacher text-school-gold mr-2"></i> Teacher/Staff Feature</h2>
                     </div>
                     <!-- Reduced padding from p-6 to p-2 -->
@@ -156,8 +158,8 @@
                 </div>
 
                 <!-- Bottom Left: Announcements -->
-                <div class="bg-white/90 backdrop-blur-sm rounded-2xl school-shadow border border-white/40 flex flex-col overflow-hidden relative">
-                    <div class="bg-school-navy/90 py-2 px-4 text-center">
+                <div class="bg-gradient-to-br from-white/95 to-blue-100/90 backdrop-blur-sm rounded-2xl school-shadow border border-white/40 flex flex-col overflow-hidden relative">
+                    <div class="bg-gradient-to-r from-school-navy to-blue-800 py-2 px-4 text-center">
                         <h2 class="text-white font-display font-bold text-xl"><i class="fas fa-bullhorn text-school-gold mr-2"></i> Announcements</h2>
                     </div>
                     <!-- Reduced padding from p-6 to p-2 -->
@@ -169,7 +171,7 @@
 
                 <!-- Bottom Right: Media Feed -->
                 <div class="bg-black rounded-2xl school-shadow border border-gray-600 flex flex-col overflow-hidden relative" id="media-slot-main">
-                    <div class="bg-school-navy/90 py-2 px-4">
+                    <div class="bg-gradient-to-r from-school-navy to-blue-800 py-2 px-4">
                         <h3 class="text-white font-display font-bold text-xl"><i class="fas fa-photo-video text-school-gold mr-2"></i> Media Feed</h3>
                     </div>
                     <div class="flex-grow bg-black relative" id="media-carousel">
@@ -189,7 +191,7 @@
         <!-- Sidebar / Aside (25%) - Upcoming Events -->
         <aside class="w-full md:w-1/4 h-full flex flex-col">
             <div class="bg-white/90 backdrop-blur-sm rounded-2xl school-shadow border border-white/40 flex flex-col overflow-hidden h-full">
-                <div class="bg-school-navy/90 py-2 px-4 flex justify-between items-center">
+                <div class="bg-gradient-to-r from-school-navy to-blue-800 py-2 px-4 flex justify-between items-center">
                     <h2 class="text-white font-display font-bold text-xl"><i class="fas fa-calendar-alt text-school-gold mr-2"></i> Events</h2>
                     <span class="text-xs text-white bg-blue-800 px-2 py-1 rounded">Upcoming</span>
                 </div>
