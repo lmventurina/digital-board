@@ -189,9 +189,7 @@
 
                 <!-- Bottom Right: Media Feed -->
                 <div class="bg-black rounded-2xl school-shadow border border-gray-600 flex flex-col overflow-hidden relative" id="media-slot-main">
-                    <div class="bg-gradient-to-r from-school-navy to-blue-800 py-2 px-4">
-                        <h3 class="text-white font-display font-bold text-xl"><i class="fas fa-photo-video text-school-gold mr-2"></i> Media Feed</h3>
-                    </div>
+                    <!-- Header removed to maximize video area -->
                     <div class="flex-grow bg-black relative" id="media-carousel">
                         <div class="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
                             <div class="text-center">
@@ -664,7 +662,14 @@
             if (user) {
                 console.log("Connected as User:", user.uid);
                 setupListeners();
-                fetchLiveNews(); // Start fetching live news
+                fetchLiveNews(); // Initial fetch
+                
+                // NEW: Auto-refresh News & Stocks every 1 hour (3,600,000 ms)
+                // This ensures the board updates daily without needing a page refresh
+                setInterval(() => {
+                    console.log("Auto-refreshing news and stocks...");
+                    fetchLiveNews();
+                }, 3600000);
             }
         });
 
