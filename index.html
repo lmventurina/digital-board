@@ -37,7 +37,7 @@
 
     <!-- Custom CSS -->
     <style>
-        body { overflow: hidden; background-size: cover; background-position: center; transition: background-image 0.5s ease-in-out; }
+        body { overflow: hidden; background-color: #f3f4f6; } /* Fallback color */
         .school-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
         
         /* Top Ticker */
@@ -76,10 +76,13 @@
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-gray-50 to-gray-200 h-screen flex flex-col font-sans text-gray-800">
+<body class="h-screen flex flex-col font-sans text-gray-800 relative">
     
-    <!-- Dark overlay for background image readability -->
-    <div class="fixed inset-0 bg-gray-900/10 z-0 pointer-events-none"></div>
+    <!-- Background Layers -->
+    <div class="fixed inset-0 bg-gradient-to-br from-gray-50 to-gray-200 z-0"></div>
+    <canvas id="circuit-bg" class="fixed inset-0 w-full h-full z-0 opacity-30"></canvas>
+    <!-- Dark overlay for readability (lighter than before to show circuit) -->
+    <div class="fixed inset-0 bg-gray-900/5 z-0 pointer-events-none"></div>
 
     <!-- NEW SOPHISTICATED HERO HEADER -->
     <header id="main-header" class="glass-panel text-white py-3 px-6 shadow-lg z-10 flex-none flex items-center justify-between relative transition-all duration-1000">
@@ -148,7 +151,7 @@
     </div>
 
     <!-- Main Container -->
-    <main class="flex-grow p-4 overflow-hidden flex flex-col md:flex-row gap-4 relative z-0 pb-16">
+    <main class="flex-grow p-4 overflow-hidden flex flex-col md:flex-row gap-4 relative z-10 pb-16">
         
         <!-- Main Grid (75%) -->
         <div class="w-full md:w-3/4 h-full">
@@ -651,6 +654,7 @@
                     await signInAnonymously(auth);
                 }
                 checkTutorial();
+                initCircuitAnimation();
             } catch (e) {
                 console.error("Auth failed", e);
             }
@@ -1542,6 +1546,104 @@
                 };
             });
         };
+
+        // --- Circuit Animation Logic ---
+        function initCircuitAnimation() {
+            const canvas = document.getElementById('circuit-bg');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            const particles = [];
+            const particleCount = 40;
+            const grid = 30; // Grid size
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            class Particle {
+                constructor() {
+                    this.init();
+                }
+                init() {
+                    // Snap to grid
+                    this.x = Math.floor(Math.random() * width / grid) * grid;
+                    this.y = Math.floor(Math.random() * height / grid) * grid;
+                    this.history = [];
+                    this.maxLength = 10 + Math.random() * 20;
+                    this.speed = 2; // Movement speed
+                    this.step = 0;
+                    // Random direction: 0:right, 1:down, 2:left, 3:up
+                    this.dir = Math.floor(Math.random() * 4);
+                    this.color = Math.random() > 0.5 ? 'rgba(0, 56, 147, 0.5)' : 'rgba(250, 204, 21, 0.5)'; // Navy or Gold
+                    this.dead = false;
+                }
+                update() {
+                    if (this.dead) { this.init(); return; }
+                    this.step += this.speed;
+                    if (this.step >= grid) {
+                        this.step = 0;
+                        // Add current pos to history
+                        this.history.push({x: this.x, y: this.y});
+                        if (this.history.length > this.maxLength) this.history.shift();
+
+                        // Move
+                        switch(this.dir) {
+                            case 0: this.x += grid; break;
+                            case 1: this.y += grid; break;
+                            case 2: this.x -= grid; break;
+                            case 3: this.y -= grid; break;
+                        }
+
+                        // Change dir randomly or if out of bounds
+                        if (Math.random() < 0.2 || this.x < 0 || this.x > width || this.y < 0 || this.y > height) {
+                            this.dir = Math.floor(Math.random() * 4);
+                            if (this.x < 0 || this.x > width || this.y < 0 || this.y > height) this.dead = true;
+                        }
+                    }
+                }
+                draw() {
+                    if (this.history.length < 2) return;
+                    ctx.beginPath();
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 2;
+                    // Draw trail
+                    for (let i = 0; i < this.history.length - 1; i++) {
+                        ctx.moveTo(this.history[i].x, this.history[i].y);
+                        ctx.lineTo(this.history[i+1].x, this.history[i+1].y);
+                    }
+                    // Draw current line segment being traced
+                    let last = this.history[this.history.length-1];
+                    let currentX = last.x;
+                    let currentY = last.y;
+                    if(this.dir === 0) currentX += this.step;
+                    else if(this.dir === 1) currentY += this.step;
+                    else if(this.dir === 2) currentX -= this.step;
+                    else if(this.dir === 3) currentY -= this.step;
+                    
+                    ctx.lineTo(currentX, currentY);
+                    ctx.stroke();
+                    
+                    // Draw head
+                    ctx.fillStyle = this.color.replace('0.5', '1');
+                    ctx.beginPath();
+                    ctx.arc(currentX, currentY, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            for(let i=0; i<particleCount; i++) particles.push(new Particle());
+
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                particles.forEach(p => { p.update(); p.draw(); });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
     </script>
 </body>
 </html>
