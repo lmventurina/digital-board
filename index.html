@@ -1,16 +1,19 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>School Digital Bulletin Board</title>
-    
+
     <!-- External Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;600&display=swap"
+        rel="stylesheet">
+
     <!-- Tailwind Configuration -->
     <script>
         tailwind.config = {
@@ -37,83 +40,67 @@
     </script>
 
     <!-- Custom CSS -->
-    <style>
-        body { overflow: hidden; transition: background-color 0.5s ease; }
-        .school-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-        .dark .school-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.15); }
-        
-        .ticker-wrap { width: 100%; overflow: hidden; background-color: #facc15; box-sizing: content-box; white-space: nowrap; }
-        .ticker-move { display: inline-block; padding-left: 100%; animation: ticker 30s linear infinite; }
-        
-        .bottom-ticker-wrap { width: 100%; overflow: hidden; white-space: nowrap; box-sizing: border-box; }
-        .bottom-ticker-move { display: inline-block; padding-left: 100%; animation: ticker 200s linear infinite; }
-
-        @keyframes ticker { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
-        
-        @keyframes weather-pop {
-            0% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.3); filter: brightness(1.2); opacity: 1; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        .weather-update-active { animation: weather-pop 0.8s ease-in-out; }
-
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
-        .dark .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-        
-        iframe { width: 100%; height: 100%; border: none; }
-        
-        .glass-panel {
-            background: rgba(0, 56, 147, 0.85);
-            background-image: linear-gradient(to right, rgba(0, 56, 147, 0.9), rgba(30, 58, 138, 0.9));
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-    </style>
+    <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="h-screen flex flex-col font-sans text-gray-800 dark:text-gray-100 bg-gray-100 dark:bg-gray-900 relative transition-colors duration-500">
-    
+
+<body
+    class="h-screen flex flex-col font-sans text-gray-800 dark:text-gray-100 bg-gray-100 dark:bg-gray-900 relative transition-colors duration-500">
     <!-- Background Layers -->
-    <div class="fixed inset-0 bg-gradient-to-br from-gray-50 to-gray-200 z-0 dark:opacity-0 transition-opacity duration-500"></div>
-    <div class="fixed inset-0 bg-gradient-to-br from-gray-900 via-slate-900 to-black z-0 opacity-0 dark:opacity-100 transition-opacity duration-500"></div>
-    <canvas id="circuit-bg" class="fixed inset-0 w-full h-full z-0 opacity-30 dark:opacity-40 transition-opacity duration-500"></canvas>
-    <div class="fixed inset-0 bg-white/30 dark:bg-black/20 z-0 pointer-events-none transition-colors duration-500"></div>
+    <div
+        class="fixed inset-0 bg-gradient-to-br from-gray-50 to-gray-200 z-0 dark:opacity-0 transition-opacity duration-500">
+    </div>
+    <div
+        class="fixed inset-0 bg-gradient-to-br from-gray-900 via-slate-900 to-black z-0 opacity-0 dark:opacity-100 transition-opacity duration-500">
+    </div>
+    <canvas id="circuit-bg"
+        class="fixed inset-0 w-full h-full z-0 opacity-30 dark:opacity-40 transition-opacity duration-500"></canvas>
+    <div class="fixed inset-0 bg-white/30 dark:bg-black/20 z-0 pointer-events-none transition-colors duration-500">
+    </div>
 
     <!-- HEADER -->
-    <header id="main-header" class="glass-panel text-white py-3 px-6 shadow-lg z-10 flex-none flex items-center justify-between relative transition-all duration-1000">
+    <header id="main-header"
+        class="glass-panel text-white py-3 px-6 shadow-lg z-10 flex-none flex items-center justify-between relative transition-all duration-1000">
         <div class="flex items-center space-x-5 w-1/3">
-            <div class="h-28 w-28 bg-white/90 rounded-full flex-none flex items-center justify-center border-4 border-school-gold overflow-hidden school-logo-container shadow-2xl relative">
-                <img id="header-logo" src="https://placehold.co/100x100?text=Logo" alt="School Logo" class="h-full w-full object-cover">
+            <div
+                class="h-28 w-28 bg-white/90 rounded-full flex-none flex items-center justify-center border-4 border-school-gold overflow-hidden school-logo-container shadow-2xl relative">
+                <img id="header-logo" src="https://placehold.co/100x100?text=Logo" alt="School Logo"
+                    class="h-full w-full object-cover">
             </div>
             <div class="min-w-0 drop-shadow-md">
-                <h1 id="header-school-name" class="text-3xl md:text-4xl font-display font-extrabold tracking-tight uppercase leading-none">Navajo Pine HS</h1>
-                <p id="header-subtitle" class="text-school-gold font-bold text-lg tracking-wide uppercase mt-1">School of Technology</p>
+                <h1 id="header-school-name"
+                    class="text-3xl md:text-4xl font-display font-extrabold tracking-tight uppercase leading-none">
+                    Navajo Pine HS</h1>
+                <p id="header-subtitle" class="text-school-gold font-bold text-lg tracking-wide uppercase mt-1">School
+                    of Technology</p>
             </div>
         </div>
         <div class="text-center w-1/3 flex flex-col justify-center items-center drop-shadow-md">
-            <div id="live-time" class="text-6xl font-display font-black tabular-nums leading-none tracking-tight">--:--</div>
-            <div id="live-date" class="text-xl text-gray-100 font-semibold uppercase tracking-widest mt-1 mb-2">Fetching Date...</div>
+            <div id="live-time" class="text-6xl font-display font-black tabular-nums leading-none tracking-tight">--:--
+            </div>
+            <div id="live-date" class="text-xl text-gray-100 font-semibold uppercase tracking-widest mt-1 mb-2">Fetching
+                Date...</div>
             <div class="relative flex items-center w-full justify-center">
-                <div class="h-px bg-gradient-to-r from-transparent via-school-gold to-transparent w-full absolute top-1/2 opacity-50"></div>
-                <span id="header-subtitle-2" class="relative bg-blue-900/40 backdrop-blur-md px-4 py-0.5 rounded-full text-xs font-bold text-school-gold uppercase tracking-[0.2em] border border-white/10 shadow-sm">
+                <div
+                    class="h-px bg-gradient-to-r from-transparent via-school-gold to-transparent w-full absolute top-1/2 opacity-50">
+                </div>
+                <span id="header-subtitle-2"
+                    class="relative bg-blue-900/40 backdrop-blur-md px-4 py-0.5 rounded-full text-xs font-bold text-school-gold uppercase tracking-[0.2em] border border-white/10 shadow-sm">
                     Home of the Tech Warriors
                 </span>
             </div>
         </div>
         <div class="w-1/3 flex justify-end">
-            <div class="bg-blue-900/40 backdrop-blur-xl rounded-2xl p-4 border border-white/20 shadow-2xl flex flex-col min-w-[320px] hover:bg-blue-900/50 transition-colors duration-500">
+            <div
+                class="bg-blue-900/40 backdrop-blur-xl rounded-2xl p-4 border border-white/20 shadow-2xl flex flex-col min-w-[320px] hover:bg-blue-900/50 transition-colors duration-500">
                 <div class="flex justify-between items-end border-b border-white/10 pb-2 mb-2">
-                    <span id="weather-city" class="text-lg font-bold text-white uppercase tracking-wider truncate">Loading...</span>
+                    <span id="weather-city"
+                        class="text-lg font-bold text-white uppercase tracking-wider truncate">Loading...</span>
                     <span class="text-[10px] text-school-gold uppercase font-bold tracking-widest">Live Weather</span>
                 </div>
                 <div class="flex items-center justify-between">
                     <div class="flex flex-col items-center justify-center px-4 border-r border-white/10">
-                        <div class="text-3xl mb-1 text-school-gold drop-shadow-lg scale-110 transition-transform" id="weather-current-icon"><i class="fas fa-circle-notch fa-spin"></i></div>
+                        <div class="text-3xl mb-1 text-school-gold drop-shadow-lg scale-110 transition-transform"
+                            id="weather-current-icon"><i class="fas fa-circle-notch fa-spin"></i></div>
                         <span id="weather-current-temp" class="text-2xl font-black leading-none text-white">--°</span>
                     </div>
                     <div class="flex-1 grid grid-cols-3 gap-2 text-center pl-2" id="weather-forecast"></div>
@@ -123,7 +110,8 @@
     </header>
 
     <!-- Top Ticker -->
-    <div class="bg-gradient-to-r from-school-gold via-yellow-400 to-school-gold backdrop-blur-sm text-school-navy font-bold py-3 text-2xl border-b-4 border-school-navy/40 flex-none z-10 relative shadow-md w-full overflow-hidden">
+    <div
+        class="bg-gradient-to-r from-school-gold via-yellow-400 to-school-gold backdrop-blur-sm text-school-navy font-bold py-3 text-2xl border-b-4 border-school-navy/40 flex-none z-10 relative shadow-md w-full overflow-hidden">
         <div class="ticker-wrap bg-transparent">
             <div class="ticker-move" id="ticker-content">Welcome to our digital bulletin board! Go Tigers!</div>
         </div>
@@ -134,132 +122,279 @@
         <div class="w-full md:w-3/4 h-full">
             <div class="grid grid-cols-1 md:grid-cols-2 grid-rows-2 gap-4 h-full">
                 <!-- Top Left: Student Spotlight -->
-                <div class="bg-white/80 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl school-shadow border border-white/40 dark:border-white/10 flex flex-col overflow-hidden relative group transition-colors duration-500">
-                    <div class="bg-gradient-to-r from-school-navy to-blue-800 py-2 px-4 text-center"><h2 class="text-white font-display font-bold text-xl"><i class="fas fa-star text-school-gold mr-2"></i> Student Spotlight</h2></div>
-                    <div class="flex-grow relative p-2 flex items-center justify-center" id="student-carousel"><div class="text-center w-full"><p class="text-gray-400">Loading...</p></div></div>
-                    <div class="absolute bottom-0 left-0 h-1 bg-school-gold transition-all duration-300" id="student-progress" style="width: 0%"></div>
+                <div
+                    class="bg-white/80 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl school-shadow border border-white/40 dark:border-white/10 flex flex-col overflow-hidden relative group transition-colors duration-500">
+                    <div class="bg-gradient-to-r from-school-navy to-blue-800 py-2 px-4 text-center">
+                        <h2 class="text-white font-display font-bold text-xl"><i
+                                class="fas fa-star text-school-gold mr-2"></i> Student Spotlight</h2>
+                    </div>
+                    <div class="flex-grow relative p-2 flex items-center justify-center" id="student-carousel">
+                        <div class="text-center w-full">
+                            <p class="text-gray-400">Loading...</p>
+                        </div>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-1 bg-school-gold transition-all duration-300"
+                        id="student-progress" style="width: 0%"></div>
                 </div>
                 <!-- Top Right: Teacher Feature -->
-                <div class="bg-white/80 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl school-shadow border border-white/40 dark:border-white/10 flex flex-col overflow-hidden relative transition-colors duration-500">
-                    <div class="bg-gradient-to-r from-school-navy to-blue-800 py-2 px-4 text-center"><h2 class="text-white font-display font-bold text-xl"><i class="fas fa-chalkboard-teacher text-school-gold mr-2"></i> Teacher/Staff Feature</h2></div>
-                    <div class="flex-grow relative p-2 flex items-center justify-center" id="teacher-carousel"><div class="text-center w-full"><p class="text-gray-400">Loading...</p></div></div>
-                    <div class="absolute bottom-0 left-0 h-1 bg-school-gold transition-all duration-300" id="teacher-progress" style="width: 0%"></div>
+                <div
+                    class="bg-white/80 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl school-shadow border border-white/40 dark:border-white/10 flex flex-col overflow-hidden relative transition-colors duration-500">
+                    <div class="bg-gradient-to-r from-school-navy to-blue-800 py-2 px-4 text-center">
+                        <h2 class="text-white font-display font-bold text-xl"><i
+                                class="fas fa-chalkboard-teacher text-school-gold mr-2"></i> Teacher/Staff Feature</h2>
+                    </div>
+                    <div class="flex-grow relative p-2 flex items-center justify-center" id="teacher-carousel">
+                        <div class="text-center w-full">
+                            <p class="text-gray-400">Loading...</p>
+                        </div>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-1 bg-school-gold transition-all duration-300"
+                        id="teacher-progress" style="width: 0%"></div>
                 </div>
                 <!-- Bottom Left: Announcements -->
-                <div class="bg-white/80 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl school-shadow border border-white/40 dark:border-white/10 flex flex-col overflow-hidden relative transition-colors duration-500">
-                    <div class="bg-gradient-to-r from-school-navy to-blue-800 py-2 px-4 text-center"><h2 class="text-white font-display font-bold text-xl"><i class="fas fa-bullhorn text-school-gold mr-2"></i> Announcements</h2></div>
-                    <div class="flex-grow relative p-2 flex items-center justify-center" id="announcement-carousel"><div class="text-center w-full"><p class="text-gray-400">No Announcements</p></div></div>
-                    <div class="absolute bottom-0 left-0 h-1 bg-school-gold transition-all duration-300" id="announcement-progress" style="width: 0%"></div>
+                <div
+                    class="bg-white/80 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl school-shadow border border-white/40 dark:border-white/10 flex flex-col overflow-hidden relative transition-colors duration-500">
+                    <div class="bg-gradient-to-r from-school-navy to-blue-800 py-2 px-4 text-center">
+                        <h2 class="text-white font-display font-bold text-xl"><i
+                                class="fas fa-bullhorn text-school-gold mr-2"></i> Announcements</h2>
+                    </div>
+                    <div class="flex-grow relative p-2 flex items-center justify-center" id="announcement-carousel">
+                        <div class="text-center w-full">
+                            <p class="text-gray-400">No Announcements</p>
+                        </div>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-1 bg-school-gold transition-all duration-300"
+                        id="announcement-progress" style="width: 0%"></div>
                 </div>
                 <!-- Bottom Right: Media Feed -->
-                <div class="bg-black/90 dark:bg-black/80 backdrop-blur-md rounded-2xl school-shadow border border-gray-600 flex flex-col overflow-hidden relative" id="media-slot-main">
-                    <div class="flex-grow relative" id="media-carousel"><div class="absolute inset-0 flex items-center justify-center text-gray-500 text-sm"><div class="text-center"><i class="fas fa-play-circle fa-2x mb-2"></i><p>No Media Set</p></div></div></div>
-                    <div class="absolute bottom-0 left-0 h-1 bg-school-gold transition-all duration-300 z-10" id="media-progress" style="width: 0%"></div>
+                <div class="bg-black/90 dark:bg-black/80 backdrop-blur-md rounded-2xl school-shadow border border-gray-600 flex flex-col overflow-hidden relative"
+                    id="media-slot-main">
+                    <div class="flex-grow relative" id="media-carousel">
+                        <div class="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
+                            <div class="text-center"><i class="fas fa-play-circle fa-2x mb-2"></i>
+                                <p>No Media Set</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-1 bg-school-gold transition-all duration-300 z-10"
+                        id="media-progress" style="width: 0%"></div>
                 </div>
             </div>
         </div>
         <!-- Sidebar -->
         <aside class="w-full md:w-1/4 h-full flex flex-col">
-            <div class="bg-white/70 dark:bg-gray-900/70 backdrop-blur-md rounded-2xl school-shadow border border-white/40 dark:border-white/10 flex flex-col overflow-hidden h-full transition-colors duration-500">
+            <div
+                class="bg-white/70 dark:bg-gray-900/70 backdrop-blur-md rounded-2xl school-shadow border border-white/40 dark:border-white/10 flex flex-col overflow-hidden h-full transition-colors duration-500">
                 <div class="bg-gradient-to-r from-school-navy to-blue-800 py-3 px-4 flex justify-between items-center">
-                    <h2 class="text-white font-display font-bold text-xl"><i class="fas fa-calendar-alt text-school-gold mr-2"></i> Events</h2>
-                    <span class="text-xs text-white bg-blue-900/50 px-2 py-1 rounded font-bold uppercase tracking-wider">Upcoming</span>
+                    <h2 class="text-white font-display font-bold text-xl"><i
+                            class="fas fa-calendar-alt text-school-gold mr-2"></i> Events</h2>
+                    <span
+                        class="text-xs text-white bg-blue-900/50 px-2 py-1 rounded font-bold uppercase tracking-wider">Upcoming</span>
                 </div>
-                <div class="flex-grow overflow-y-auto custom-scrollbar p-4" id="events-list"><div class="text-center w-full text-gray-400 mt-4">Loading Events...</div></div>
+                <div class="flex-grow overflow-y-auto custom-scrollbar p-4" id="events-list">
+                    <div class="text-center w-full text-gray-400 mt-4">Loading Events...</div>
+                </div>
             </div>
         </aside>
     </main>
 
     <!-- Bottom News Ticker -->
-    <div class="fixed bottom-0 left-0 w-full bg-gray-900/95 backdrop-blur text-white py-3 z-40 border-t-2 border-school-gold shadow-2xl">
+    <div
+        class="fixed bottom-0 left-0 w-full bg-gray-900/95 backdrop-blur text-white py-3 z-40 border-t-2 border-school-gold shadow-2xl">
         <div class="bottom-ticker-wrap bg-transparent">
-            <div class="bottom-ticker-move" id="bottom-ticker-content"><span class="inline-block mx-4 text-gray-400 font-mono">Loading News Feed...</span></div>
+            <div class="bottom-ticker-move" id="bottom-ticker-content"><span
+                    class="inline-block mx-4 text-gray-400 font-mono">Loading News Feed...</span></div>
         </div>
     </div>
 
     <!-- Floating Buttons -->
     <div class="fixed bottom-20 right-6 flex flex-col space-y-4 z-50">
-        <button onclick="toggleTheme()" class="bg-gray-100 dark:bg-gray-800 hover:bg-white dark:hover:bg-gray-700 text-gray-800 dark:text-yellow-400 p-3 rounded-full shadow-lg transition-transform hover:scale-110 flex items-center justify-center h-12 w-12 border-2 border-gray-300 dark:border-gray-600" title="Toggle Theme"><i id="theme-icon" class="fas fa-moon fa-lg"></i></button>
-        <button onclick="window.openTutorial()" class="bg-school-gold hover:bg-yellow-400 text-school-navy p-3 rounded-full shadow-lg transition-transform hover:scale-110 flex items-center justify-center h-12 w-12 border-2 border-school-navy" title="How to use"><i class="fas fa-question fa-lg font-bold"></i></button>
-        <button onclick="handleAdminClick()" class="bg-gray-800/90 hover:bg-school-navy text-white p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 backdrop-blur h-16 w-16 flex items-center justify-center border border-white/20" title="Admin Panel"><i class="fas fa-cog fa-2x"></i></button>
+        <button onclick="toggleTheme()"
+            class="bg-gray-100 dark:bg-gray-800 hover:bg-white dark:hover:bg-gray-700 text-gray-800 dark:text-yellow-400 p-3 rounded-full shadow-lg transition-transform hover:scale-110 flex items-center justify-center h-12 w-12 border-2 border-gray-300 dark:border-gray-600"
+            title="Toggle Theme"><i id="theme-icon" class="fas fa-moon fa-lg"></i></button>
+        <button onclick="window.openTutorial()"
+            class="bg-school-gold hover:bg-yellow-400 text-school-navy p-3 rounded-full shadow-lg transition-transform hover:scale-110 flex items-center justify-center h-12 w-12 border-2 border-school-navy"
+            title="How to use"><i class="fas fa-question fa-lg font-bold"></i></button>
+        <button onclick="handleAdminClick()"
+            class="bg-gray-800/90 hover:bg-school-navy text-white p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 backdrop-blur h-16 w-16 flex items-center justify-center border border-white/20"
+            title="Admin Panel"><i class="fas fa-cog fa-2x"></i></button>
     </div>
 
     <!-- PIN Prompt Modal -->
-    <div id="pin-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-sm text-center transform transition-all scale-100 border border-gray-200 dark:border-white/10">
-            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4"><i class="fas fa-lock mr-2 text-school-navy dark:text-school-gold"></i> Admin Access</h3>
+    <div id="pin-modal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
+        <div
+            class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-sm text-center transform transition-all scale-100 border border-gray-200 dark:border-white/10">
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4"><i
+                    class="fas fa-lock mr-2 text-school-navy dark:text-school-gold"></i> Admin Access</h3>
             <p class="text-gray-500 dark:text-gray-400 mb-4 text-sm">Please enter the security PIN to continue.</p>
-            <input type="password" id="pin-input" class="w-full text-center text-3xl tracking-[0.5em] font-bold border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-3 mb-6 focus:border-school-navy dark:focus:border-school-gold focus:outline-none transition-colors" maxlength="6" placeholder="••••">
+            <input type="password" id="pin-input"
+                class="w-full text-center text-3xl tracking-[0.5em] font-bold border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-3 mb-6 focus:border-school-navy dark:focus:border-school-gold focus:outline-none transition-colors"
+                maxlength="6" placeholder="••••">
             <div class="flex space-x-3 justify-center">
-                <button onclick="closePinModal()" class="px-5 py-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg font-medium transition-colors">Cancel</button>
-                <button onclick="verifyPin()" class="bg-school-navy hover:bg-blue-800 text-white font-bold py-2 px-8 rounded-lg shadow-lg transition-transform hover:scale-105">Unlock</button>
+                <button onclick="closePinModal()"
+                    class="px-5 py-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg font-medium transition-colors">Cancel</button>
+                <button onclick="verifyPin()"
+                    class="bg-school-navy hover:bg-blue-800 text-white font-bold py-2 px-8 rounded-lg shadow-lg transition-transform hover:scale-105">Unlock</button>
             </div>
         </div>
     </div>
 
     <!-- Tutorial Modal -->
-    <div id="tutorial-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all scale-100 text-gray-800">
-            <div class="bg-school-navy p-6 flex justify-between items-center"><h3 class="text-2xl font-bold text-white font-display">Welcome to Your Digital Board!</h3><button onclick="window.closeTutorial()" class="text-white/70 hover:text-white"><i class="fas fa-times fa-lg"></i></button></div>
+    <div id="tutorial-modal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div
+            class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all scale-100 text-gray-800">
+            <div class="bg-school-navy p-6 flex justify-between items-center">
+                <h3 class="text-2xl font-bold text-white font-display">Welcome to Your Digital Board!</h3><button
+                    onclick="window.closeTutorial()" class="text-white/70 hover:text-white"><i
+                        class="fas fa-times fa-lg"></i></button>
+            </div>
             <div class="p-8 space-y-6">
-                <p class="text-gray-600 text-lg">Manage your school's digital signage easily. Here is how to get started:</p>
+                <p class="text-gray-600 text-lg">Manage your school's digital signage easily. Here is how to get
+                    started:</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="flex items-start space-x-4"><div class="bg-gray-100 p-3 rounded-full text-gray-800"><i class="fas fa-cog fa-lg"></i></div><div><h4 class="font-bold text-school-navy">1. Admin Panel</h4><p class="text-sm text-gray-500">Click the Gear icon below.</p></div></div>
-                    <div class="flex items-start space-x-4"><div class="bg-gray-100 p-3 rounded-full text-gray-800"><i class="fas fa-edit fa-lg"></i></div><div><h4 class="font-bold text-school-navy">2. Manage Content</h4><p class="text-sm text-gray-500">Add/Edit Announcements, Staff, etc.</p></div></div>
-                    <div class="flex items-start space-x-4"><div class="bg-gray-100 p-3 rounded-full text-gray-800"><i class="fas fa-moon fa-lg"></i></div><div><h4 class="font-bold text-school-navy">3. Themes</h4><p class="text-sm text-gray-500">Toggle Light/Dark mode with the Moon icon.</p></div></div>
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-gray-100 p-3 rounded-full text-gray-800"><i class="fas fa-cog fa-lg"></i></div>
+                        <div>
+                            <h4 class="font-bold text-school-navy">1. Admin Panel</h4>
+                            <p class="text-sm text-gray-500">Click the Gear icon below.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-gray-100 p-3 rounded-full text-gray-800"><i class="fas fa-edit fa-lg"></i></div>
+                        <div>
+                            <h4 class="font-bold text-school-navy">2. Manage Content</h4>
+                            <p class="text-sm text-gray-500">Add/Edit Announcements, Staff, etc.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-gray-100 p-3 rounded-full text-gray-800"><i class="fas fa-moon fa-lg"></i></div>
+                        <div>
+                            <h4 class="font-bold text-school-navy">3. Themes</h4>
+                            <p class="text-sm text-gray-500">Toggle Light/Dark mode with the Moon icon.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="pt-6 border-t flex justify-end"><button onclick="window.closeTutorial()" class="bg-school-navy hover:bg-blue-800 text-white font-bold py-3 px-8 rounded-lg shadow transition-colors">Get Started</button></div>
+                <div class="pt-6 border-t flex justify-end"><button onclick="window.closeTutorial()"
+                        class="bg-school-navy hover:bg-blue-800 text-white font-bold py-3 px-8 rounded-lg shadow transition-colors">Get
+                        Started</button></div>
             </div>
         </div>
     </div>
 
     <!-- Admin Modal -->
-    <div id="admin-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-5xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden text-gray-800">
-            <div class="bg-gray-800 text-white p-4 flex justify-between items-center"><h3 class="text-xl font-bold font-display"><i class="fas fa-sliders-h mr-2"></i> Dashboard Configuration</h3><button onclick="toggleAdminModal()" class="text-gray-400 hover:text-white transition-colors"><i class="fas fa-times fa-lg"></i></button></div>
+    <div id="admin-modal"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div
+            class="bg-white w-full max-w-5xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden text-gray-800">
+            <div class="bg-gray-800 text-white p-4 flex justify-between items-center">
+                <h3 class="text-xl font-bold font-display"><i class="fas fa-sliders-h mr-2"></i> Dashboard Configuration
+                </h3><button onclick="toggleAdminModal()" class="text-gray-400 hover:text-white transition-colors"><i
+                        class="fas fa-times fa-lg"></i></button>
+            </div>
             <div class="flex flex-grow overflow-hidden">
                 <div class="w-1/5 bg-gray-100 border-r border-gray-200 overflow-y-auto">
                     <nav class="flex flex-col p-2 space-y-1" id="admin-tabs">
-                        <button onclick="switchTab('tab-announcements')" class="admin-tab-btn active text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent"><i class="fas fa-bullhorn w-6"></i> Announcements</button>
-                        <button onclick="switchTab('tab-students')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent"><i class="fas fa-user-graduate w-6"></i> Students</button>
-                        <button onclick="switchTab('tab-teachers')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent"><i class="fas fa-chalkboard-teacher w-6"></i> Teacher/Staff</button>
-                        <button onclick="switchTab('tab-events')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent"><i class="fas fa-calendar-alt w-6"></i> Events</button>
-                        <button onclick="switchTab('tab-ticker')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent"><i class="fas fa-scroll w-6"></i> Ticker (Top)</button>
-                        <button onclick="switchTab('tab-news')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent"><i class="fas fa-newspaper w-6"></i> News Ticker (Btm)</button>
-                         <button onclick="switchTab('tab-media')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent"><i class="fas fa-photo-video w-6"></i> Media Sidebar</button>
-                        <button onclick="switchTab('tab-config')" class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent"><i class="fas fa-tools w-6"></i> Config</button>
+                        <button onclick="switchTab('tab-announcements')"
+                            class="admin-tab-btn active text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent"><i
+                                class="fas fa-bullhorn w-6"></i> Announcements</button>
+                        <button onclick="switchTab('tab-students')"
+                            class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent"><i
+                                class="fas fa-user-graduate w-6"></i> Students</button>
+                        <button onclick="switchTab('tab-teachers')"
+                            class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent"><i
+                                class="fas fa-chalkboard-teacher w-6"></i> Teacher/Staff</button>
+                        <button onclick="switchTab('tab-events')"
+                            class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent"><i
+                                class="fas fa-calendar-alt w-6"></i> Events</button>
+                        <button onclick="switchTab('tab-ticker')"
+                            class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent"><i
+                                class="fas fa-scroll w-6"></i> Ticker (Top)</button>
+                        <button onclick="switchTab('tab-news')"
+                            class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent"><i
+                                class="fas fa-newspaper w-6"></i> News Ticker (Btm)</button>
+                        <button onclick="switchTab('tab-media')"
+                            class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent"><i
+                                class="fas fa-photo-video w-6"></i> Media Sidebar</button>
+                        <button onclick="switchTab('tab-config')"
+                            class="admin-tab-btn text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all focus:outline-none border-l-4 border-transparent"><i
+                                class="fas fa-tools w-6"></i> Config</button>
                     </nav>
                 </div>
                 <div class="w-4/5 p-8 overflow-y-auto bg-gray-50 relative">
                     <div id="tab-announcements" class="admin-content block">
-                        <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-gray-800">Manage Announcements</h2><button onclick="openEntryModal('announcements')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add New</button></div>
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">Manage Announcements</h2><button
+                                onclick="openEntryModal('announcements')"
+                                class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i
+                                    class="fas fa-plus mr-2"></i> Add New</button>
+                        </div>
                         <div class="space-y-2" id="admin-announcements-list"></div>
                     </div>
                     <div id="tab-students" class="admin-content hidden">
-                        <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-gray-800">Manage Student Spotlight</h2><button onclick="openEntryModal('students')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add Student</button></div>
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">Manage Student Spotlight</h2><button
+                                onclick="openEntryModal('students')"
+                                class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i
+                                    class="fas fa-plus mr-2"></i> Add Student</button>
+                        </div>
                         <div class="space-y-2" id="admin-students-list"></div>
                     </div>
                     <div id="tab-teachers" class="admin-content hidden">
-                        <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-gray-800">Manage Teacher/Staff Features</h2><button onclick="openEntryModal('teachers')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add Feature</button></div>
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">Manage Teacher/Staff Features</h2><button
+                                onclick="openEntryModal('teachers')"
+                                class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i
+                                    class="fas fa-plus mr-2"></i> Add Feature</button>
+                        </div>
                         <div class="space-y-2" id="admin-teachers-list"></div>
                     </div>
                     <div id="tab-events" class="admin-content hidden">
-                        <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-gray-800">Manage Manual Events</h2><button onclick="openEntryModal('events')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add Event</button></div>
-                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6"><p class="text-sm text-blue-700"><strong>Note:</strong> Events from Google Calendar (Config) are automatic. Add manual events here.</p></div>
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">Manage Manual Events</h2><button
+                                onclick="openEntryModal('events')"
+                                class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i
+                                    class="fas fa-plus mr-2"></i> Add Event</button>
+                        </div>
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                            <p class="text-sm text-blue-700"><strong>Note:</strong> Events from Google Calendar (Config)
+                                are automatic. Add manual events here.</p>
+                        </div>
                         <div class="space-y-2" id="admin-events-list"></div>
                     </div>
                     <div id="tab-ticker" class="admin-content hidden">
-                        <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-gray-800">Manage Ticker Messages (Top)</h2><button onclick="openEntryModal('ticker')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add Message</button></div>
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">Manage Ticker Messages (Top)</h2><button
+                                onclick="openEntryModal('ticker')"
+                                class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i
+                                    class="fas fa-plus mr-2"></i> Add Message</button>
+                        </div>
                         <div class="space-y-2" id="admin-ticker-list"></div>
                     </div>
                     <div id="tab-news" class="admin-content hidden">
-                        <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-gray-800">Manage News Ticker (Bottom)</h2><button onclick="openEntryModal('news')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add Custom Headline</button></div>
-                        <div class="bg-indigo-50 border-l-4 border-indigo-500 p-4 mb-6"><p class="text-sm text-indigo-700"><strong>Live Feed Active:</strong> Business/Edu news auto-populates.</p></div>
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">Manage News Ticker (Bottom)</h2><button
+                                onclick="openEntryModal('news')"
+                                class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i
+                                    class="fas fa-plus mr-2"></i> Add Custom Headline</button>
+                        </div>
+                        <div class="bg-indigo-50 border-l-4 border-indigo-500 p-4 mb-6">
+                            <p class="text-sm text-indigo-700"><strong>Live Feed Active:</strong> Business/Edu news
+                                auto-populates.</p>
+                        </div>
                         <div class="space-y-2" id="admin-news-list"></div>
                     </div>
                     <div id="tab-media" class="admin-content hidden">
-                        <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-gray-800">Manage Media Sidebar</h2><button onclick="openEntryModal('media')" class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i class="fas fa-plus mr-2"></i> Add Media</button></div>
-                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6"><p class="text-sm text-blue-700"><strong>Instructions:</strong> YouTube/Facebook/Images.</p></div>
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">Manage Media Sidebar</h2><button
+                                onclick="openEntryModal('media')"
+                                class="bg-school-navy hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors"><i
+                                    class="fas fa-plus mr-2"></i> Add Media</button>
+                        </div>
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                            <p class="text-sm text-blue-700"><strong>Instructions:</strong> YouTube/Facebook/Images.</p>
+                        </div>
                         <div class="space-y-2" id="admin-media-list"></div>
                     </div>
                     <div id="tab-config" class="admin-content hidden">
@@ -267,23 +402,130 @@
                             <div class="bg-white p-6 rounded-xl shadow-sm border">
                                 <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">School Identity</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div><label class="block text-sm font-medium text-gray-700 mb-1">School Name</label><div class="border rounded-lg w-full bg-white overflow-hidden border-gray-300 focus-within:border-school-navy focus-within:ring-1 focus-within:ring-school-navy"><div class="bg-gray-100 px-2 py-1.5 border-b flex space-x-1"><button type="button" onmousedown="event.preventDefault();" onclick="document.execCommand('bold', false, null)" class="w-6 h-6 flex items-center justify-center hover:bg-gray-300 rounded text-xs font-bold">B</button><button type="button" onmousedown="event.preventDefault();" onclick="document.execCommand('italic', false, null)" class="w-6 h-6 flex items-center justify-center hover:bg-gray-300 rounded text-xs italic">I</button></div><div id="editor-conf-name" class="p-2 min-h-[42px] outline-none text-sm text-gray-700" contenteditable="true"></div></div></div>
-                                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Subtitle</label><div class="border rounded-lg w-full bg-white overflow-hidden border-gray-300 focus-within:border-school-navy focus-within:ring-1 focus-within:ring-school-navy"><div class="bg-gray-100 px-2 py-1.5 border-b flex space-x-1"><button type="button" onmousedown="event.preventDefault();" onclick="document.execCommand('bold', false, null)" class="w-6 h-6 flex items-center justify-center hover:bg-gray-300 rounded text-xs font-bold">B</button><button type="button" onmousedown="event.preventDefault();" onclick="document.execCommand('italic', false, null)" class="w-6 h-6 flex items-center justify-center hover:bg-gray-300 rounded text-xs italic">I</button></div><div id="editor-conf-subtitle" class="p-2 min-h-[42px] outline-none text-sm text-gray-700" contenteditable="true"></div></div></div>
-                                    <div class="md:col-span-2"><label class="block text-sm font-medium text-gray-700 mb-1">Center Tagline</label><div class="border rounded-lg w-full bg-white overflow-hidden border-gray-300 focus-within:border-school-navy focus-within:ring-1 focus-within:ring-school-navy"><div class="bg-gray-100 px-2 py-1.5 border-b flex space-x-1"><button type="button" onmousedown="event.preventDefault();" onclick="document.execCommand('bold', false, null)" class="w-6 h-6 flex items-center justify-center hover:bg-gray-300 rounded text-xs font-bold">B</button><button type="button" onmousedown="event.preventDefault();" onclick="document.execCommand('italic', false, null)" class="w-6 h-6 flex items-center justify-center hover:bg-gray-300 rounded text-xs italic">I</button><button type="button" onmousedown="event.preventDefault();" onclick="document.execCommand('underline', false, null)" class="w-6 h-6 flex items-center justify-center hover:bg-gray-300 rounded text-xs underline">U</button></div><div id="editor-conf-subtitle-2" class="p-2 min-h-[42px] outline-none text-sm text-gray-700" contenteditable="true" placeholder="e.g. Home of the Tech Warriors"></div></div></div>
-                                    <div class="md:col-span-2 border-t pt-4 mt-2"><label class="block text-sm font-medium text-gray-700 mb-2">School Logo</label><div class="flex items-center space-x-4"><div class="h-16 w-16 bg-white rounded-full border flex items-center justify-center overflow-hidden flex-none"><img id="conf-logo-preview" src="https://placehold.co/100x100?text=Logo" class="h-full w-full object-cover"></div><input type="file" id="conf-logo-file" accept="image/*" class="text-sm block w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-school-navy/10 file:text-school-navy hover:file:bg-school-navy/20"></div></div>
-                                    <div class="md:col-span-2 border-t pt-4 mt-2"><label class="block text-sm font-medium text-gray-700 mb-2">Header Background</label><div class="flex items-center space-x-4"><div class="h-16 w-16 bg-gray-200 rounded-lg border flex items-center justify-center overflow-hidden flex-none"><img id="conf-header-bg-preview" src="https://placehold.co/100x100?text=Header" class="h-full w-full object-cover"></div><input type="file" id="conf-header-bg-file" accept="image/*" class="text-sm block w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-school-navy/10 file:text-school-navy hover:file:bg-school-navy/20"></div></div>
-                                    <div class="md:col-span-2 border-t pt-4 mt-2 bg-red-50 p-4 rounded-lg border border-red-100"><label class="block text-sm font-bold text-school-navy mb-2"><i class="fas fa-lock mr-2"></i> Security PIN</label><div class="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-4"><input type="text" id="conf-admin-pin" class="w-full md:w-32 p-2 border border-gray-300 rounded font-mono text-center tracking-widest text-lg font-bold" placeholder="1234" maxlength="6"><div class="text-xs text-gray-600"><p>Set a 4-6 digit PIN.</p><p><strong>Default:</strong> 1234</p></div></div></div>
+                                    <div><label class="block text-sm font-medium text-gray-700 mb-1">School Name</label>
+                                        <div
+                                            class="border rounded-lg w-full bg-white overflow-hidden border-gray-300 focus-within:border-school-navy focus-within:ring-1 focus-within:ring-school-navy">
+                                            <div class="bg-gray-100 px-2 py-1.5 border-b flex space-x-1"><button
+                                                    type="button" onmousedown="event.preventDefault();"
+                                                    onclick="document.execCommand('bold', false, null)"
+                                                    class="w-6 h-6 flex items-center justify-center hover:bg-gray-300 rounded text-xs font-bold">B</button><button
+                                                    type="button" onmousedown="event.preventDefault();"
+                                                    onclick="document.execCommand('italic', false, null)"
+                                                    class="w-6 h-6 flex items-center justify-center hover:bg-gray-300 rounded text-xs italic">I</button>
+                                            </div>
+                                            <div id="editor-conf-name"
+                                                class="p-2 min-h-[42px] outline-none text-sm text-gray-700"
+                                                contenteditable="true"></div>
+                                        </div>
+                                    </div>
+                                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Subtitle</label>
+                                        <div
+                                            class="border rounded-lg w-full bg-white overflow-hidden border-gray-300 focus-within:border-school-navy focus-within:ring-1 focus-within:ring-school-navy">
+                                            <div class="bg-gray-100 px-2 py-1.5 border-b flex space-x-1"><button
+                                                    type="button" onmousedown="event.preventDefault();"
+                                                    onclick="document.execCommand('bold', false, null)"
+                                                    class="w-6 h-6 flex items-center justify-center hover:bg-gray-300 rounded text-xs font-bold">B</button><button
+                                                    type="button" onmousedown="event.preventDefault();"
+                                                    onclick="document.execCommand('italic', false, null)"
+                                                    class="w-6 h-6 flex items-center justify-center hover:bg-gray-300 rounded text-xs italic">I</button>
+                                            </div>
+                                            <div id="editor-conf-subtitle"
+                                                class="p-2 min-h-[42px] outline-none text-sm text-gray-700"
+                                                contenteditable="true"></div>
+                                        </div>
+                                    </div>
+                                    <div class="md:col-span-2"><label
+                                            class="block text-sm font-medium text-gray-700 mb-1">Center Tagline</label>
+                                        <div
+                                            class="border rounded-lg w-full bg-white overflow-hidden border-gray-300 focus-within:border-school-navy focus-within:ring-1 focus-within:ring-school-navy">
+                                            <div class="bg-gray-100 px-2 py-1.5 border-b flex space-x-1"><button
+                                                    type="button" onmousedown="event.preventDefault();"
+                                                    onclick="document.execCommand('bold', false, null)"
+                                                    class="w-6 h-6 flex items-center justify-center hover:bg-gray-300 rounded text-xs font-bold">B</button><button
+                                                    type="button" onmousedown="event.preventDefault();"
+                                                    onclick="document.execCommand('italic', false, null)"
+                                                    class="w-6 h-6 flex items-center justify-center hover:bg-gray-300 rounded text-xs italic">I</button><button
+                                                    type="button" onmousedown="event.preventDefault();"
+                                                    onclick="document.execCommand('underline', false, null)"
+                                                    class="w-6 h-6 flex items-center justify-center hover:bg-gray-300 rounded text-xs underline">U</button>
+                                            </div>
+                                            <div id="editor-conf-subtitle-2"
+                                                class="p-2 min-h-[42px] outline-none text-sm text-gray-700"
+                                                contenteditable="true" placeholder="e.g. Home of the Tech Warriors">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="md:col-span-2 border-t pt-4 mt-2"><label
+                                            class="block text-sm font-medium text-gray-700 mb-2">School Logo</label>
+                                        <div class="flex items-center space-x-4">
+                                            <div
+                                                class="h-16 w-16 bg-white rounded-full border flex items-center justify-center overflow-hidden flex-none">
+                                                <img id="conf-logo-preview" src="https://placehold.co/100x100?text=Logo"
+                                                    class="h-full w-full object-cover">
+                                            </div><input type="file" id="conf-logo-file" accept="image/*"
+                                                class="text-sm block w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-school-navy/10 file:text-school-navy hover:file:bg-school-navy/20">
+                                        </div>
+                                    </div>
+                                    <div class="md:col-span-2 border-t pt-4 mt-2"><label
+                                            class="block text-sm font-medium text-gray-700 mb-2">Header
+                                            Background</label>
+                                        <div class="flex items-center space-x-4">
+                                            <div
+                                                class="h-16 w-16 bg-gray-200 rounded-lg border flex items-center justify-center overflow-hidden flex-none">
+                                                <img id="conf-header-bg-preview"
+                                                    src="https://placehold.co/100x100?text=Header"
+                                                    class="h-full w-full object-cover">
+                                            </div><input type="file" id="conf-header-bg-file" accept="image/*"
+                                                class="text-sm block w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-school-navy/10 file:text-school-navy hover:file:bg-school-navy/20">
+                                        </div>
+                                    </div>
+                                    <div class="md:col-span-2 border-t pt-4 mt-2"><label
+                                            class="block text-sm font-medium text-gray-700 mb-2">Favicon</label>
+                                        <div class="flex items-center space-x-4">
+                                            <div
+                                                class="h-16 w-16 bg-white rounded-lg border flex items-center justify-center overflow-hidden flex-none">
+                                                <img id="conf-favicon-preview"
+                                                    src="https://placehold.co/100x100?text=Favicon"
+                                                    class="h-full w-full object-contain p-2">
+                                            </div><input type="file" id="conf-favicon-file" accept="image/*"
+                                                class="text-sm block w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-school-navy/10 file:text-school-navy hover:file:bg-school-navy/20">
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="md:col-span-2 border-t pt-4 mt-2 bg-red-50 p-4 rounded-lg border border-red-100">
+                                        <label class="block text-sm font-bold text-school-navy mb-2"><i
+                                                class="fas fa-lock mr-2"></i> Security PIN</label>
+                                        <div
+                                            class="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-4">
+                                            <input type="text" id="conf-admin-pin"
+                                                class="w-full md:w-32 p-2 border border-gray-300 rounded font-mono text-center tracking-widest text-lg font-bold"
+                                                placeholder="1234" maxlength="6">
+                                            <div class="text-xs text-gray-600">
+                                                <p>Set a 4-6 digit PIN.</p>
+                                                <p><strong>Default:</strong> 1234</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="bg-white p-6 rounded-xl shadow-sm border">
                                 <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Integrations</h3>
                                 <div class="space-y-4">
-                                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Weather Location</label><input type="text" id="conf-location" class="w-full p-2 border rounded" placeholder="e.g. Navajo, NM"></div>
-                                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Google Calendar Public iCal Link</label><input type="text" id="conf-calendar" class="w-full p-2 border rounded" placeholder="https://calendar.google.com/.../basic.ics"></div>
-                                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Stock Market API Key (Finnhub)</label><input type="text" id="conf-finnhub-key" class="w-full p-2 border rounded" placeholder="Enter Finnhub API Key"></div>
+                                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Weather
+                                            Location</label><input type="text" id="conf-location"
+                                            class="w-full p-2 border rounded" placeholder="e.g. Navajo, NM"></div>
+                                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Google Calendar
+                                            Public iCal Link</label><input type="text" id="conf-calendar"
+                                            class="w-full p-2 border rounded"
+                                            placeholder="https://calendar.google.com/.../basic.ics"></div>
+                                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Stock Market API
+                                            Key (Finnhub)</label><input type="text" id="conf-finnhub-key"
+                                            class="w-full p-2 border rounded" placeholder="Enter Finnhub API Key"></div>
                                 </div>
                             </div>
-                            <button onclick="saveConfig()" class="w-full bg-school-navy hover:bg-blue-800 text-white font-bold py-3 rounded-lg transition-colors shadow">Save Configuration</button>
+                            <button onclick="saveConfig()"
+                                class="w-full bg-school-navy hover:bg-blue-800 text-white font-bold py-3 rounded-lg transition-colors shadow">Save
+                                Configuration</button>
                         </div>
                     </div>
                 </div>
@@ -298,583 +540,24 @@
             <form id="entry-form" onsubmit="handleEntrySubmit(event)" class="space-y-4 text-gray-800">
                 <div id="entry-fields"></div>
                 <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="closeEntryModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
-                    <button type="submit" class="px-4 py-2 bg-school-navy text-white rounded hover:bg-blue-800">Save</button>
+                    <button type="button" onclick="closeEntryModal()"
+                        class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
+                    <button type="submit"
+                        class="px-4 py-2 bg-school-navy text-white rounded hover:bg-blue-800">Save</button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- Loading Indicator -->
-    <div id="global-loader" class="fixed top-4 right-4 bg-white px-4 py-2 rounded-full shadow-lg z-[100] hidden flex items-center space-x-2">
+    <div id="global-loader"
+        class="fixed top-4 right-4 bg-white px-4 py-2 rounded-full shadow-lg z-[100] hidden flex items-center space-x-2">
         <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-school-navy"></div>
         <span class="text-xs font-bold text-school-navy">Saving...</span>
     </div>
 
     <!-- Main Logic -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, setDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        // Inject YouTube IFrame API
-        let ytApiReady = false;
-        window.onYouTubeIframeAPIReady = () => { ytApiReady = true; };
-        const tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        const firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-        // --- Configuration ---
-        let firebaseConfig;
-        if (typeof __firebase_config !== 'undefined') {
-            firebaseConfig = JSON.parse(__firebase_config);
-        } else {
-            firebaseConfig = {
-                apiKey: "AIzaSyAtawxqfPOZqKJZcClKBVXSClC3IsIuDtM",
-                authDomain: "digital-bulletin-board-6c660.firebaseapp.com",
-                projectId: "digital-bulletin-board-6c660",
-                storageBucket: "digital-bulletin-board-6c660.firebasestorage.app",
-                messagingSenderId: "1051324595132",
-                appId: "1:1051324595132:web:bb95ce7acc65d9e80d49b9",
-                measurementId: "G-6VW2SKC09Z"
-            };
-        }
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'navajo-pine-hs-v2'; 
-
-        let currentUser = null;
-        let appData = { announcements: [], students: [], teachers: [], events: [], externalEvents: [], ticker: "", settings: {}, media: [], news: [], liveNews: [] };
-
-        const DEPARTMENTS = ["General", "Admin", "History", "Navajo Language", "Math", "ELA", "Science", "Tech", "Special Ed", "PE", "Health", "Welding", "Sports", "Music", "Art"];
-        const COLLECTIONS = { ANNOUNCEMENTS: 'announcements', STUDENTS: 'students', TEACHERS: 'teachers', EVENTS: 'events', TICKER: 'ticker', SETTINGS: 'settings', MEDIA: 'media', NEWS: 'news' };
-
-        // Carousel Configuration
-        const carousels = {
-            student: { index: 0, timer: null, interval: 8000 },
-            teacher: { index: 0, timer: null, interval: 10000 },
-            announcement: { index: 0, timer: null, interval: 12000 },
-            media: { index: 0, timer: null, interval: 15000 }
-        };
-
-        const els = {
-            schoolName: document.getElementById('header-school-name'),
-            schoolSubtitle: document.getElementById('header-subtitle'),
-            schoolSubtitle2: document.getElementById('header-subtitle-2'),
-            liveTime: document.getElementById('live-time'),
-            liveDate: document.getElementById('live-date'),
-            ticker: document.getElementById('ticker-content'),
-            bottomTicker: document.getElementById('bottom-ticker-content'),
-            studentCarousel: document.getElementById('student-carousel'),
-            studentProgress: document.getElementById('student-progress'),
-            teacherCarousel: document.getElementById('teacher-carousel'),
-            teacherProgress: document.getElementById('teacher-progress'),
-            announcementCarousel: document.getElementById('announcement-carousel'),
-            announcementProgress: document.getElementById('announcement-progress'),
-            mediaCarousel: document.getElementById('media-carousel'),
-            mediaProgress: document.getElementById('media-progress'),
-            eventsList: document.getElementById('events-list'),
-            weatherCity: document.getElementById('weather-city'),
-            weatherIcon: document.getElementById('weather-current-icon'),
-            weatherTemp: document.getElementById('weather-current-temp'),
-            weatherForecast: document.getElementById('weather-forecast'),
-            adminAnnouncements: document.getElementById('admin-announcements-list'),
-            adminStudents: document.getElementById('admin-students-list'),
-            adminTeachers: document.getElementById('admin-teachers-list'),
-            adminEvents: document.getElementById('admin-events-list'),
-            adminTicker: document.getElementById('admin-ticker-list'),
-            adminNews: document.getElementById('admin-news-list'),
-            adminMedia: document.getElementById('admin-media-list'),
-            confName: document.getElementById('conf-name'),
-            confSubtitle: document.getElementById('conf-subtitle'),
-            confSubtitle2: document.getElementById('conf-subtitle-2'),
-            confLocation: document.getElementById('conf-location'),
-            confCalendar: document.getElementById('conf-calendar')
-        };
-
-        // --- Helpers ---
-        function extractYouTubeID(url) {
-            let videoId = '';
-            try {
-                const u = new URL(url);
-                if (u.hostname.includes('youtube.com')) {
-                    if (u.searchParams.has('v')) videoId = u.searchParams.get('v');
-                    else if (u.pathname.includes('/shorts/')) videoId = u.pathname.split('/shorts/')[1];
-                    else if (u.pathname.includes('/embed/')) videoId = u.pathname.split('/embed/')[1];
-                } else if (u.hostname.includes('youtu.be')) videoId = u.pathname.slice(1);
-            } catch(e) {}
-            return videoId ? videoId.split('?')[0].split('&')[0] : null;
-        }
-
-        const processAndCompressImage = (file, maxWidth) => new Promise((resolve,reject)=>{ if(file.size<800*1024){const r=new FileReader();r.onload=()=>resolve(r.result);r.readAsDataURL(file);return;} const r=new FileReader(); r.readAsDataURL(file); r.onload=e=>{const i=new Image(); i.src=e.target.result; i.onload=()=>{const c=document.createElement('canvas'), ctx=c.getContext('2d'); let w=i.width, h=i.height; if(w>maxWidth){h=Math.round((h*maxWidth)/w);w=maxWidth;} c.width=w;c.height=h; ctx.fillStyle="#FFF"; ctx.fillRect(0,0,w,h); ctx.drawImage(i,0,0,w,h); resolve(c.toDataURL('image/jpeg',0.7));}}});
-
-        // --- Tutorial (Global Scope) ---
-        window.checkTutorial = function() {
-            if (!localStorage.getItem('tutorial_seen')) document.getElementById('tutorial-modal').classList.remove('hidden');
-        }
-        window.closeTutorial = () => {
-            document.getElementById('tutorial-modal').classList.add('hidden');
-            localStorage.setItem('tutorial_seen', 'true');
-        };
-        window.openTutorial = () => document.getElementById('tutorial-modal').classList.remove('hidden');
-
-        // --- Theme Logic (Global Scope) ---
-        let particlesRef = null; 
-        
-        function initTheme() {
-            const savedTheme = localStorage.getItem('theme');
-            const isDark = savedTheme === 'dark' || (!savedTheme && true); 
-            if (isDark) {
-                document.documentElement.classList.add('dark');
-                document.getElementById('theme-icon').classList.replace('fa-sun', 'fa-moon');
-            } else {
-                document.documentElement.classList.remove('dark');
-                document.getElementById('theme-icon').classList.replace('fa-moon', 'fa-sun');
-            }
-        }
-
-        window.toggleTheme = () => {
-            const html = document.documentElement;
-            const icon = document.getElementById('theme-icon');
-            html.classList.toggle('dark');
-            if (html.classList.contains('dark')) {
-                localStorage.setItem('theme', 'dark');
-                icon.classList.replace('fa-sun', 'fa-moon');
-            } else {
-                localStorage.setItem('theme', 'light');
-                icon.classList.replace('fa-moon', 'fa-sun');
-            }
-            if (particlesRef) particlesRef(); 
-        };
-
-        // --- UI Updaters ---
-        function updateUIConfig(settings) {
-            if(settings.schoolName) els.schoolName.innerHTML = settings.schoolName;
-            if(settings.subtitle) els.schoolSubtitle.innerHTML = settings.subtitle;
-            if(settings.subtitle2) els.schoolSubtitle2.innerHTML = settings.subtitle2;
-            if(settings.logo) document.getElementById('header-logo').src = settings.logo;
-            const headerEl = document.getElementById('main-header');
-            if(settings.headerBackground) { headerEl.style.backgroundImage = `url('${settings.headerBackground}')`; headerEl.style.backgroundSize = 'cover'; headerEl.style.backgroundPosition = 'center'; } 
-            else headerEl.style.backgroundImage = ''; 
-            
-            const confName = document.getElementById('editor-conf-name');
-            const confSub = document.getElementById('editor-conf-subtitle');
-            const confSub2 = document.getElementById('editor-conf-subtitle-2');
-            if(confName) confName.innerHTML = settings.schoolName || "";
-            if(confSub) confSub.innerHTML = settings.subtitle || "";
-            if(confSub2) confSub2.innerHTML = settings.subtitle2 || "";
-            els.confLocation.value = settings.location || "";
-            els.confCalendar.value = settings.googleCalendar || "";
-            document.getElementById('conf-finnhub-key').value = settings.finnhubApiKey || "";
-            const pinField = document.getElementById('conf-admin-pin');
-            if (pinField) pinField.value = settings.adminPin || "1234";
-            
-            if(settings.headerBackground) document.getElementById('conf-header-bg-preview').src = settings.headerBackground;
-            if(settings.logo) document.getElementById('conf-logo-preview').src = settings.logo;
-            
-            fetchCalendar(settings.googleCalendar);
-        }
-
-        function generateFormFields(t, v) {
-            v=v||{}; let h=''; 
-            const re=(n,val,l)=>`<div><label class="block text-sm font-bold mb-1">${l}</label><div id="editor-${n}" class="border rounded p-3 min-h-[80px] max-h-48 overflow-y-auto text-sm" contenteditable="true">${val||''}</div></div>`;
-            if(t==='announcements') h+=`<div><label class="block text-sm font-bold mb-1">Title</label><input name="title" required value="${v.title||''}" class="w-full p-2 border rounded"></div>${re('description',v.description,'Description')}<div class="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded border mt-2"><div><label class="block text-xs font-bold uppercase">Start</label><input type="date" name="startDate" value="${v.startDate||''}" class="w-full p-2 border rounded"></div><div><label class="block text-xs font-bold uppercase">End</label><input type="date" name="endDate" value="${v.endDate||''}" class="w-full p-2 border rounded"></div></div><div class="flex items-center mt-2"><input type="checkbox" name="urgent" ${v.urgent?'checked':''} class="h-4 w-4"><label class="ml-2 text-sm font-bold text-red-600">Urgent</label></div>`;
-            else if(t==='students') h+=`<div><label class="block text-sm font-bold mb-1">Name</label><input name="name" required value="${v.name||''}" class="w-full p-2 border rounded"></div><div><label class="block text-sm font-bold mb-1">Focus</label><input name="focus" value="${v.focus||''}" class="w-full p-2 border rounded"></div>${re('description',v.description,'Quote')}`;
-            else if(t==='teachers') h+=`<div><label class="block text-sm font-bold mb-1">Name</label><input name="name" required value="${v.name||''}" class="w-full p-2 border rounded"></div><div><label class="block text-sm font-bold mb-1">Dept</label><select name="dept" class="w-full p-2 border rounded">${DEPARTMENTS.map(d=>`<option value="${d}" ${v.dept===d?'selected':''}>${d}</option>`).join('')}</select></div>${re('bio',v.bio,'Bio')}`;
-            else if(t==='events') h+=`<div><label class="block text-sm font-bold mb-1">Title</label><input name="title" required value="${v.title||''}" class="w-full p-2 border rounded"></div><div><label class="block text-sm font-bold mb-1">Date</label><input type="date" name="datetime" required value="${v.datetime||''}" class="w-full p-2 border rounded"></div><div><label class="block text-sm font-bold mb-1">Location</label><input name="location" value="${v.location||''}" class="w-full p-2 border rounded"></div>`;
-            else if(t==='ticker'||t==='news') h+=re('text',v.text,'Message');
-            else if(t==='media') h+=`<div><label class="block text-sm font-bold mb-1">Type</label><select name="type" class="w-full p-2 border rounded"><option value="youtube" ${v.type==='youtube'?'selected':''}>YouTube</option><option value="image" ${v.type==='image'?'selected':''}>Image</option></select></div><div><label class="block text-sm font-bold mb-1">Content (URL)</label><textarea name="content" required rows="3" class="w-full p-2 border rounded text-xs">${v.content||''}</textarea></div>`;
-            if(!['events','ticker','news','media'].includes(t)) h+=`<div class="border-t pt-4 mt-2"><label class="block text-sm font-bold mb-1">Image</label><input type="file" id="form-image-file" accept="image/*" class="text-sm"></div>`;
-            document.getElementById('entry-fields').innerHTML = h;
-        }
-
-        function renderAdminList(type, data) {
-            const container = els[`admin${type.charAt(0).toUpperCase() + type.slice(1)}`];
-            if (!container) return;
-            if (data.length === 0) { container.innerHTML = `<p class="text-gray-500 italic col-span-3">No items found.</p>`; return; }
-            container.innerHTML = data.map((item, index) => {
-                let mainText = item.title || item.name || item.text;
-                let subText = item.description || item.dept || item.datetime || '';
-                let img = item.image;
-                if(type === 'ticker' || type === 'news') { mainText = item.text; subText = "Headline"; }
-                if(type === 'media') { mainText = item.type.toUpperCase(); subText = item.content ? item.content.substring(0,30) + '...' : ''; if(item.type==='image') img = item.content; }
-                if(type === 'events' && item.datetime) {
-                    const d = new Date(item.datetime); d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-                    subText = d.toLocaleDateString() + (item.location ? ` - ${item.location}` : '');
-                }
-                const hiddenClass = item.hidden ? 'opacity-60 bg-gray-50' : '';
-                const hiddenIcon = item.hidden ? 'fa-eye-slash text-gray-500' : 'fa-eye text-green-600';
-                return `<div class="bg-white p-4 rounded-lg shadow border border-gray-200 flex justify-between items-start group ${hiddenClass}"><div class="flex items-start space-x-3 overflow-hidden">${img ? `<img src="${img}" class="w-10 h-10 rounded-full object-cover border">` : ''}<div class="min-w-0"><h4 class="font-bold text-gray-800 truncate text-sm">${mainText}</h4><p class="text-xs text-gray-500 truncate">${subText || ''}</p></div></div><div class="flex space-x-3 opacity-0 group-hover:opacity-100 transition-opacity items-center"><div class="flex flex-col space-y-1 items-center mr-2">${index > 0 ? `<button onclick="moveItem('${type}', '${item.id}', -1)" class="text-gray-500 hover:text-school-navy"><i class="fas fa-arrow-up"></i></button>` : `<span class="w-4"></span>`}${index < data.length - 1 ? `<button onclick="moveItem('${type}', '${item.id}', 1)" class="text-gray-500 hover:text-school-navy"><i class="fas fa-arrow-down"></i></button>` : `<span class="w-4"></span>`}</div><div class="h-8 w-px bg-gray-200 mx-1"></div><button onclick="toggleVisibility('${type}', '${item.id}', ${item.hidden || false})" class="${hiddenIcon} hover:text-gray-800"><i class="fas ${hiddenIcon}"></i></button><button onclick="editEntry('${type}', '${item.id}')" class="text-blue-600 hover:text-blue-800"><i class="fas fa-edit"></i></button><button onclick="deleteEntry('${type}', '${item.id}')" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button></div></div>`;
-            }).join('');
-        }
-
-        function renderBottomTicker() {
-            const manual = appData.news.filter(i => !i.hidden).map(i => ({ title: i.text, source: 'School News' }));
-            const combined = [...manual, ...appData.liveNews];
-            if (combined.length === 0) { els.bottomTicker.innerHTML = `<span class="inline-block mx-4 text-gray-400 font-mono">Waiting for news update...</span>`; return; }
-            els.bottomTicker.innerHTML = combined.map(item => {
-                let iconColor = 'text-school-gold'; let icon = 'fa-newspaper';
-                if (item.source === 'Navajo Nation') { iconColor = 'text-orange-400'; icon = 'fa-feather'; }
-                if (item.source === 'Business') { iconColor = 'text-blue-400'; icon = 'fa-briefcase'; }
-                if (item.source === 'Stock Market') { iconColor = 'text-emerald-400'; icon = 'fa-chart-line'; } 
-                if (item.source === 'Education') { iconColor = 'text-yellow-200'; icon = 'fa-graduation-cap'; }
-                if (['Market Index', 'Stock', 'Crypto'].includes(item.source)) {
-                    const isUp = item.title.includes('▲') || item.title.includes('+');
-                    const trendColor = isUp ? 'text-green-400' : 'text-red-400'; 
-                    if (item.source === 'Market Index') icon = 'fa-chart-pie';
-                    if (item.source === 'Stock') icon = 'fa-building';
-                    if (item.source === 'Crypto') icon = 'fa-coins'; 
-                    return `<span class="inline-flex items-center mx-8"><i class="fas ${icon} text-gray-400 mr-2 text-sm"></i><span class="font-mono font-bold text-lg tracking-tight text-white mr-2">${item.title.split(':')[0]}:</span><span class="font-mono font-bold text-lg ${trendColor}">${item.title.split(':')[1]}</span></span>`;
-                }
-                return `<span class="inline-flex items-center mx-12"><i class="fas ${icon} ${iconColor} mr-3 text-sm opacity-80"></i><span class="font-display font-semibold text-lg tracking-wide text-gray-100">${item.title}</span></span>`;
-            }).join('');
-        }
-
-        function renderCarousel(t, d) {
-            const c=els[`${t}Carousel`], p=els[`${t}Progress`], cfg=carousels[t];
-            if(cfg.timer) clearTimeout(cfg.timer);
-            if(!d||!d.length) { c.innerHTML=`<div class="w-full h-full flex items-center justify-center text-center text-gray-400">No content available</div>`; return; }
-            if(cfg.index>=d.length) cfg.index=0;
-            const show = () => {
-                if(t==='media'&&window.currentMediaPlayer){try{window.currentMediaPlayer.destroy()}catch(e){}window.currentMediaPlayer=null;}
-                if(p){p.style.transition='none';p.style.width='0%';}
-                const item = d[cfg.index];
-                c.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center opacity-0 transition-opacity duration-500 relative" id="${t}-slide"></div>`;
-                const s = document.getElementById(`${t}-slide`);
-                const next = (ms) => {
-                    if(d.length<=1){if(p){p.style.width='0%';p.style.display='none';}return;}
-                    if(p){p.style.display='block';setTimeout(()=>{p.style.transition=`width ${ms}ms linear`;p.style.width='100%';},50);}
-                    cfg.timer = setTimeout(()=>{cfg.index=(cfg.index+1)%d.length;show();}, ms);
-                };
-                if(t==='media' && item.type==='youtube'){
-                    s.classList.remove('opacity-0');
-                    const vid = extractYouTubeID(item.content);
-                    if(vid && ytApiReady) {
-                        s.innerHTML=`<div id="yt-p-${Date.now()}" style="width:100%;height:100%"></div>`;
-                        window.currentMediaPlayer = new YT.Player(s.firstElementChild.id, {
-                            height:'100%',width:'100%',videoId:vid,
-                            playerVars:{autoplay:1,controls:0,rel:0,showinfo:0,mute:0,origin:window.location.origin,enablejsapi:1},
-                            events:{
-                                'onReady':e=>e.target.playVideo(),
-                                'onStateChange':e=>{if(e.data===0)next(100);},
-                                'onError':()=>next(3000)
-                            }
-                        });
-                        if(d.length>1) cfg.timer=setTimeout(()=>{cfg.index=(cfg.index+1)%d.length;show();},600000);
-                    } else next(5000);
-                } else if(t==='media' && item.type==='facebook') {
-                    s.innerHTML=item.content.includes('<iframe')?item.content:'Invalid Code';
-                    const f=s.querySelector('iframe'); if(f){f.style.width='100%';f.style.height='100%';}
-                    setTimeout(()=>s.classList.remove('opacity-0'),50); next(cfg.interval);
-                } else {
-                    if(t==='media' && item.type==='image') s.innerHTML=`<img src="${item.content}" class="w-full h-full object-cover">`;
-                    else if(t==='student') s.innerHTML=`<div class="flex flex-row items-center w-full h-full gap-3"><div class="flex-none w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-school-gold overflow-hidden shadow-lg bg-gray-200 ml-2"><img src="${item.image||'https://placehold.co/200'}" class="w-full h-full object-cover"></div><div class="flex-1 flex flex-col items-start justify-center text-left min-w-0 pr-2"><h3 class="text-2xl font-bold text-school-navy dark:text-school-gold mb-1 leading-tight">${item.name}</h3><span class="bg-school-gold text-school-navy px-3 py-1 rounded-full text-sm font-bold mb-3">${item.focus||'Student'}</span><p class="text-gray-600 dark:text-gray-300 italic line-clamp-4 text-sm md:text-base">"${item.description}"</p></div></div>`;
-                    else if(t==='teacher') s.innerHTML=`<div class="flex flex-row items-center w-full h-full gap-3"><div class="flex-none w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-school-navy dark:border-white overflow-hidden shadow-lg bg-gray-200 ml-2"><img src="${item.image||'https://placehold.co/200'}" class="w-full h-full object-cover"></div><div class="flex-1 text-left min-w-0 pr-2"><h3 class="text-2xl font-bold text-gray-800 dark:text-white leading-tight">${item.name}</h3><div class="text-school-navy dark:text-school-gold font-bold uppercase tracking-wide text-sm mb-2">${item.dept}</div><p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-5 border-l-4 border-school-gold pl-3">${item.bio}</p></div></div>`;
-                    else if(t==='announcement') s.innerHTML=`<div class="flex flex-row items-center w-full h-full gap-4 relative ${item.urgent?'border-4 border-red-600 rounded-xl bg-red-50 dark:bg-red-900/20':''} overflow-hidden">${(item.image&&item.image.length>50)?`<div class="flex-none w-1/3 h-full flex items-center justify-center p-1"><img src="${item.image}" class="w-full h-full rounded-lg shadow-sm object-contain"></div>`:`<div class="flex-none w-24 flex items-center justify-center text-school-gold ml-2"><i class="fas fa-bullhorn fa-4x"></i></div>`}<div class="flex-1 flex flex-col justify-center text-left min-w-0 pr-2"><h3 class="text-xl md:text-2xl font-bold text-school-navy dark:text-school-gold mb-2 leading-tight">${item.title}</h3><div class="h-1 w-20 bg-school-gold mb-3"></div><p class="text-gray-700 dark:text-gray-300 text-sm md:text-lg line-clamp-5">${item.description}</p></div>${item.urgent?'<span class="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-bl-lg uppercase animate-pulse">Urgent</span>':''}</div>`;
-                    setTimeout(()=>s.classList.remove('opacity-0'),50); next(cfg.interval);
-                }
-            };
-            show();
-        }
-
-        function mergeAndRenderEvents() {
-            const all = [...appData.events, ...appData.externalEvents].sort((a,b)=>new Date(a.datetime)-new Date(b.datetime));
-            const now = new Date(); now.setHours(0,0,0,0);
-            const valid = all.filter(e => {
-                const d = new Date(e.datetime); d.setMinutes(d.getMinutes()+d.getTimezoneOffset());
-                if(e.endDate) { const ed=new Date(e.endDate); ed.setMinutes(ed.getMinutes()+ed.getTimezoneOffset()); if(now>ed) return false; }
-                else if(now>d) return false;
-                return true;
-            });
-            if(!valid.length) { els.eventsList.innerHTML=`<p class="text-center text-gray-400 mt-4">No Upcoming Events</p>`; return; }
-            els.eventsList.innerHTML = valid.map(e => {
-                const d=new Date(e.datetime); d.setMinutes(d.getMinutes()+d.getTimezoneOffset());
-                const diff=d.getTime()-now.getTime(); const days=Math.ceil(diff/(86400000));
-                const soon=days>=0&&days<=3;
-                const bCls = soon ? 'border-red-600 bg-red-900/30' : 'border-school-gold bg-white dark:bg-gray-800/50';
-                const tCls = soon ? 'text-red-400' : 'text-school-navy dark:text-school-gold';
-                return `<div class="flex items-center p-3 rounded-lg shadow-sm mb-3 border-l-4 ${bCls} transition-colors duration-300"><div class="flex-none w-14 text-center flex flex-col items-center justify-center"><div class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase leading-none">${d.toLocaleDateString([],{month:'short'})}</div><div class="text-xl font-bold ${tCls} leading-none my-0.5">${d.getDate()}</div>${soon?'<div class="bg-red-600 text-white text-[9px] px-1 py-0.5 rounded font-bold uppercase mt-1 animate-pulse leading-none inline-block">Soon</div>':''}</div><div class="ml-3 flex-1 min-w-0"><h4 class="font-bold text-sm text-gray-800 dark:text-gray-100 leading-tight truncate">${e.title}</h4><p class="text-xs text-gray-500 dark:text-gray-400 truncate">${e.location||'TBA'}</p></div></div>`;
-            }).join('');
-        }
-
-        async function fetchWeather(location) {
-            if (!location) { if(els.weatherCity) els.weatherCity.innerText = "NO LOCATION"; return; }
-            if(els.weatherCity) els.weatherCity.innerText = location;
-            let lat = 35.8973, lon = -109.0289;
-            const loc = location.toLowerCase();
-            if (loc.includes('gallup')) { lat = 35.5281; lon = -108.7426; }
-            if (loc.includes('window rock')) { lat = 35.6731; lon = -109.0556; }
-            if (loc.includes('albuquerque')) { lat = 35.0844; lon = -106.6504; }
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&temperature_unit=fahrenheit&timezone=auto`;
-            try {
-                const res = await fetch(url); const data = await res.json();
-                const getWeatherIcon = (code) => {
-                    if (code === 0) return 'fa-sun'; if (code <= 3) return 'fa-cloud-sun'; if (code <= 48) return 'fa-smog';
-                    if (code <= 67) return 'fa-cloud-rain'; if (code <= 77) return 'fa-snowflake'; if (code <= 82) return 'fa-cloud-showers-heavy';
-                    if (code <= 86) return 'fa-snowflake'; if (code <= 99) return 'fa-bolt'; return 'fa-cloud';
-                };
-                if (data.current_weather) {
-                    els.weatherTemp.innerText = `${Math.round(data.current_weather.temperature)}°`;
-                    els.weatherIcon.innerHTML = `<i class="fas ${getWeatherIcon(data.current_weather.weathercode)}"></i>`;
-                    els.weatherIcon.classList.remove('weather-update-active');
-                    void els.weatherIcon.offsetWidth; els.weatherIcon.classList.add('weather-update-active');
-                    setTimeout(() => els.weatherIcon.classList.remove('weather-update-active'), 1000);
-                }
-                if (data.daily) {
-                    let h = '';
-                    for(let i=1; i<=3; i++) {
-                        if (!data.daily.time[i]) continue;
-                        const d = new Date(data.daily.time[i]); d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-                        h += `<div class="flex flex-col items-center justify-center"><span class="text-[10px] text-gray-300 font-bold uppercase mb-1">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]}</span><div class="text-xl my-1 text-white"><i class="fas ${getWeatherIcon(data.daily.weathercode[i])}"></i></div><span class="text-xs font-bold leading-none text-gray-200">${Math.round(data.daily.temperature_2m_max[i])}°/${Math.round(data.daily.temperature_2m_min[i])}°</span></div>`;
-                    }
-                    els.weatherForecast.innerHTML = h;
-                }
-            } catch (e) { console.error(e); if(els.weatherCity) els.weatherCity.innerText = "Weather Unavail"; }
-        }
-
-        async function fetchCalendar(icalUrl) {
-            if(icalUrl && icalUrl.length > 10) {
-                appData.externalEvents = [{ title: "School Board Mtg", datetime: new Date(Date.now() + 86400000).toISOString().split('T')[0], location: "Admin" }, { title: "Early Release", datetime: new Date(Date.now() + 172800000).toISOString().split('T')[0], location: "Campus" }];
-                mergeAndRenderEvents();
-            } else { appData.externalEvents = []; mergeAndRenderEvents(); }
-        }
-
-        let weatherRefreshInterval;
-        function startWeatherAutoUpdate(location) {
-            if (weatherRefreshInterval) clearInterval(weatherRefreshInterval);
-            fetchWeather(location);
-            weatherRefreshInterval = setInterval(() => fetchWeather(location), 1800000);
-        }
-
-        async function fetchLiveNews() {
-            const apiKey = appData.settings?.finnhubApiKey || "d5t4u39r01qt62nh9is0d5t4u39r01qt62nh9isg";
-            let marketData = [];
-            if (apiKey) {
-                try {
-                    const syms = [
-                        {s:'SPY',n:'S&P 500',t:'Market Index'},{s:'DIA',n:'DOW',t:'Market Index'},{s:'QQQ',n:'NASDAQ',t:'Market Index'},
-                        {s:'AAPL',n:'Apple',t:'Stock'},{s:'MSFT',n:'Microsoft',t:'Stock'},{s:'NVDA',n:'Nvidia',t:'Stock'},
-                        {s:'GOOGL',n:'Google',t:'Stock'},{s:'AMZN',n:'Amazon',t:'Stock'},
-                        {s:'BINANCE:BTCUSDT',n:'BTC',t:'Crypto'},{s:'BINANCE:ETHUSDT',n:'ETH',t:'Crypto'},
-                        {s:'BINANCE:SOLUSDT',n:'SOL',t:'Crypto'},{s:'BINANCE:BNBUSDT',n:'BNB',t:'Crypto'},{s:'BINANCE:XRPUSDT',n:'XRP',t:'Crypto'}
-                    ];
-                    for (const obj of syms) {
-                        const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${obj.s}&token=${apiKey}`);
-                        const d = await res.json();
-                        if (d.c) {
-                            const change = d.dp >= 0 ? `▲ +${d.dp.toFixed(2)}%` : `▼ ${d.dp.toFixed(2)}%`;
-                            marketData.push({ title: `${obj.n}: ${d.c.toFixed(2)} ${change}`, source: obj.t });
-                        }
-                    }
-                } catch (e) { console.error(e); }
-            }
-            const feeds = [
-                {u:'https://www.cnbc.com/id/10000664/device/rss/rss.html',t:'Stock Market'},
-                {u:'https://www.cnbc.com/id/10001147/device/rss/rss.html',t:'Business'},
-                {u:'http://feeds.feedburner.com/EducationWeek',t:'Education'},
-                {u:'https://news.google.com/rss/search?q=Navajo+Nation&hl=en-US&gl=US&ceid=US:en',t:'Navajo Nation'}
-            ];
-            let allItems = [];
-            for (const f of feeds) {
-                try {
-                    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(f.u)}`);
-                    const data = await res.json();
-                    if (data.status === 'ok') allItems.push(...data.items.slice(0, 3).map(i => ({ title: i.title, source: f.t })));
-                } catch(e){}
-            }
-            allItems.sort(() => Math.random() - 0.5);
-            appData.liveNews = [...marketData, ...allItems];
-            renderBottomTicker();
-        }
-        
-        function setupListeners() {
-            const listen = (c, cb) => onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', c), s => cb(s.docs.map(d => ({id:d.id, ...d.data()}))));
-            listen(COLLECTIONS.ANNOUNCEMENTS, d => { appData.announcements=d; renderCarousel('announcement', d.filter(i=>!i.hidden)); renderAdminList('announcements',d); });
-            listen(COLLECTIONS.STUDENTS, d => { appData.students=d; renderCarousel('student', d.filter(i=>!i.hidden)); renderAdminList('students',d); });
-            listen(COLLECTIONS.TEACHERS, d => { appData.teachers=d; renderCarousel('teacher', d.filter(i=>!i.hidden)); renderAdminList('teachers',d); });
-            listen(COLLECTIONS.EVENTS, d => { appData.events=d; mergeAndRenderEvents(); renderAdminList('events',d); });
-            listen(COLLECTIONS.TICKER, d => { const v=d.filter(i=>!i.hidden); els.ticker.innerHTML = v.length?v.map(i=>i.text).join(' &nbsp; <span class="text-school-navy/50 mx-2">●</span> &nbsp; '):"Welcome to School Board"; renderAdminList('ticker',d); });
-            listen(COLLECTIONS.NEWS, d => { appData.news=d; renderBottomTicker(); renderAdminList('news',d); });
-            listen(COLLECTIONS.MEDIA, d => { appData.media=d; renderCarousel('media', d.filter(i=>!i.hidden)); renderAdminList('media',d); });
-            listen(COLLECTIONS.SETTINGS, d => {
-                if (d.length) { appData.settings=d[0]; appData.settingsId=d[0].id; updateUIConfig(d[0]); startWeatherAutoUpdate(d[0].location); fetchLiveNews(); }
-                else if(currentUser) addDoc(collection(db,'artifacts',appId,'public','data',COLLECTIONS.SETTINGS), {schoolName:"Navajo Pine HS", subtitle:"School of Technology", location:"Navajo, NM"});
-            });
-        }
-
-        // --- Standard Admin Helpers (Show/Hide/Edit/Delete/Move) ---
-        let currentEditType = null; let currentEditId = null;
-        window.openEntryModal = (t) => { currentEditType=t; currentEditId=null; document.getElementById('entry-modal-title').innerText=`Add ${t}`; document.getElementById('entry-form').reset(); generateFormFields(t,null); document.getElementById('entry-modal').classList.remove('hidden'); };
-        window.editEntry = (t,id) => { currentEditType=t; currentEditId=id; const i=appData[t].find(x=>x.id===id); if(i){ document.getElementById('entry-modal-title').innerText=`Edit ${t}`; generateFormFields(t,i); document.getElementById('entry-modal').classList.remove('hidden'); }};
-        window.closeEntryModal = () => document.getElementById('entry-modal').classList.add('hidden');
-        window.deleteEntry = async (t,id) => { if(confirm("Delete?")){ showLoader(); await deleteDoc(doc(getCollectionRef(t),id)); hideLoader(); }};
-        window.toggleVisibility = async (t,id,h) => { showLoader(); await updateDoc(doc(getCollectionRef(t),id), {hidden:!h}); hideLoader(); };
-        window.moveItem = async (t,id,dir) => { 
-            const arr = [...appData[t]].sort((a,b)=>(a.order||0)-(b.order||0));
-            const idx = arr.findIndex(i=>i.id===id);
-            if(idx>-1 && arr[idx+dir]) {
-                const c=arr[idx], n=arr[idx+dir], temp=c.order;
-                c.order = n.order; n.order = temp;
-                showLoader();
-                await Promise.all([updateDoc(doc(getCollectionRef(t),c.id),{order:c.order}), updateDoc(doc(getCollectionRef(t),n.id),{order:n.order})]);
-                hideLoader();
-            }
-        };
-        window.handleEntrySubmit = async (e) => {
-            e.preventDefault(); const fd=new FormData(e.target); const d=Object.fromEntries(fd.entries());
-            ['description','bio','text'].forEach(k=>{const el=document.getElementById(`editor-${k}`); if(el)d[k]=el.innerHTML;});
-            if(currentEditType==='announcements') d.urgent=fd.get('urgent')==='on';
-            showLoader();
-            try {
-                const f=document.getElementById('form-image-file').files[0]; if(f) d.image = await processAndCompressImage(f,1024);
-                else if(!d.image && currentEditId) { const old=appData[currentEditType].find(x=>x.id===currentEditId); if(old) d.image=old.image; }
-                if(currentEditId) await updateDoc(doc(getCollectionRef(currentEditType),currentEditId),d);
-                else await addDoc(getCollectionRef(currentEditType),d);
-                closeEntryModal();
-            } catch(e){console.error(e);} hideLoader();
-        };
-        function showLoader(){document.getElementById('global-loader').classList.remove('hidden');}
-        function hideLoader(){document.getElementById('global-loader').classList.add('hidden');}
-
-        // --- Admin/UI ---
-        window.handleAdminClick = () => { document.getElementById('pin-modal').classList.remove('hidden'); document.getElementById('pin-input').value=''; setTimeout(()=>document.getElementById('pin-input').focus(),100); };
-        window.closePinModal = () => document.getElementById('pin-modal').classList.add('hidden');
-        window.verifyPin = () => {
-            const correct = appData.settings?.adminPin || '1234';
-            if (document.getElementById('pin-input').value === correct) { closePinModal(); document.getElementById('admin-modal').classList.remove('hidden'); }
-            else { const el = document.getElementById('pin-input'); el.classList.add('border-red-500','animate-pulse'); setTimeout(()=>el.classList.remove('border-red-500','animate-pulse'),500); }
-        };
-        document.getElementById('pin-input').addEventListener('keydown', e => { if(e.key==='Enter') window.verifyPin(); if(e.key==='Escape') window.closePinModal(); });
-
-        window.toggleAdminModal = () => document.getElementById('admin-modal').classList.toggle('hidden');
-        window.switchTab = (id) => {
-            document.querySelectorAll('.admin-content').forEach(e=>e.classList.add('hidden'));
-            document.querySelectorAll('.admin-tab-btn').forEach(e=>e.classList.remove('bg-white','shadow-sm','border-l-4','border-school-navy','text-school-navy'));
-            document.getElementById(id).classList.remove('hidden');
-            const btn = [...document.querySelectorAll('.admin-tab-btn')].find(b=>b.getAttribute('onclick').includes(id));
-            if(btn) btn.classList.add('bg-white','shadow-sm','border-l-4','border-school-navy','text-school-navy');
-        };
-        window.saveConfig = async () => {
-            showLoader();
-            try {
-                let logo = appData.settings?.logo||"", hdr = appData.settings?.headerBackground||"";
-                const lf = document.getElementById('conf-logo-file').files[0]; if(lf) logo = await processAndCompressImage(lf,500);
-                const hf = document.getElementById('conf-header-bg-file').files[0]; if(hf) hdr = await processAndCompressImage(hf,1280);
-                
-                const c = {
-                    schoolName: document.getElementById('editor-conf-name').innerHTML,
-                    subtitle: document.getElementById('editor-conf-subtitle').innerHTML,
-                    subtitle2: document.getElementById('editor-conf-subtitle-2').innerHTML,
-                    location: els.confLocation.value, googleCalendar: els.confCalendar.value,
-                    finnhubApiKey: document.getElementById('conf-finnhub-key').value,
-                    logo: logo, headerBackground: hdr, adminPin: document.getElementById('conf-admin-pin').value || "1234"
-                };
-                if(appData.settingsId) await updateDoc(doc(getCollectionRef(COLLECTIONS.SETTINGS), appData.settingsId), c);
-                else await addDoc(getCollectionRef(COLLECTIONS.SETTINGS), c);
-                startWeatherAutoUpdate(c.location);
-            } catch(e){console.error(e);alert("Save failed");} hideLoader();
-        };
-
-        // --- Circuit Animation ---
-        function initCircuitAnimation() {
-            const canvas = document.getElementById('circuit-bg'); if(!canvas) return;
-            const ctx = canvas.getContext('2d');
-            let width, height, particles = [];
-            
-            const initParticles = () => {
-                width = canvas.width = window.innerWidth;
-                height = canvas.height = window.innerHeight;
-                particles = [];
-                const isDark = document.documentElement.classList.contains('dark');
-                const c1 = isDark ? 'rgba(6, 182, 212, 0.5)' : 'rgba(0, 56, 147, 0.5)';
-                const c2 = isDark ? 'rgba(250, 204, 21, 0.5)' : 'rgba(37, 99, 235, 0.5)';
-                
-                for(let i=0; i<40; i++) {
-                    particles.push({
-                        x: Math.floor(Math.random()*width/30)*30, y: Math.floor(Math.random()*height/30)*30,
-                        history: [], maxLength: 10+Math.random()*20, step:0, dir:Math.floor(Math.random()*4),
-                        color: Math.random()>0.5 ? c1 : c2
-                    });
-                }
-            };
-            
-            // Expose ref for theme toggle
-            particlesRef = initParticles;
-            window.addEventListener('resize', initParticles);
-            initParticles();
-
-            function animate() {
-                ctx.clearRect(0, 0, width, height);
-                particles.forEach(p => {
-                    p.step += 2;
-                    if(p.step >= 30) {
-                        p.step = 0; p.history.push({x:p.x, y:p.y});
-                        if(p.history.length > p.maxLength) p.history.shift();
-                        if(p.dir===0) p.x+=30; else if(p.dir===1) p.y+=30; else if(p.dir===2) p.x-=30; else p.y-=30;
-                        if(Math.random()<0.2 || p.x<0 || p.x>width || p.y<0 || p.y>height) {
-                            p.dir = Math.floor(Math.random()*4);
-                            if(p.x<0||p.x>width||p.y<0||p.y>height) { p.x=Math.floor(Math.random()*width/30)*30; p.y=Math.floor(Math.random()*height/30)*30; p.history=[]; }
-                        }
-                    }
-                    if(p.history.length<2) return;
-                    ctx.beginPath(); ctx.strokeStyle=p.color; ctx.lineWidth=2;
-                    for(let i=0;i<p.history.length-1;i++) { ctx.moveTo(p.history[i].x, p.history[i].y); ctx.lineTo(p.history[i+1].x, p.history[i+1].y); }
-                    let lx=p.history[p.history.length-1].x, ly=p.history[p.history.length-1].y;
-                    if(p.dir===0) lx+=p.step; else if(p.dir===1) ly+=p.step; else if(p.dir===2) lx-=p.step; else ly-=p.step;
-                    ctx.lineTo(lx,ly); ctx.stroke();
-                    ctx.fillStyle=p.color.replace('0.5','1'); ctx.beginPath(); ctx.arc(lx,ly,3,0,Math.PI*2); ctx.fill();
-                });
-                requestAnimationFrame(animate);
-            }
-            animate();
-        }
-
-        // --- Clock ---
-        let lastDateString = "";
-        function startClock() {
-            const update = () => {
-                const now = new Date();
-                els.liveTime.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                els.liveDate.innerText = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
-                if (lastDateString !== "" && els.liveDate.innerText !== lastDateString) {
-                    if (appData.settings?.location) fetchWeather(appData.settings.location);
-                }
-                lastDateString = els.liveDate.innerText;
-            };
-            update(); setInterval(update, 1000);
-        }
-        startClock();
-
-        // --- Auth Init ---
-        async function initAuth() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                checkTutorial();
-                initCircuitAnimation();
-                initTheme();
-            } catch (e) {
-                console.error("Auth failed", e);
-            }
-        }
-        initAuth();
-
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            if (user) {
-                setupListeners();
-                fetchLiveNews();
-                setInterval(() => fetchLiveNews(), 3600000);
-            }
-        });
-
-    </script>
+    <script type="module" src="js/app.js"></script>
 </body>
+
 </html>
