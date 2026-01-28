@@ -46,7 +46,7 @@
         
         /* Bottom Ticker Specifics - Fixed Layout */
         .bottom-ticker-wrap { width: 100%; overflow: hidden; background-color: #111827; white-space: nowrap; box-sizing: border-box; }
-        /* Slowed down animation from 120s to 200s for better readability */
+        /* Slowed down animation from 60s to 200s for better readability */
         .bottom-ticker-move { display: inline-block; padding-left: 100%; animation: ticker 200s linear infinite; }
 
         @keyframes ticker { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
@@ -526,6 +526,11 @@
                                         <input type="text" id="conf-calendar" class="w-full p-2 border rounded" placeholder="https://calendar.google.com/.../basic.ics">
                                         <p class="text-xs text-gray-500 mt-1">Paste the "Public address in iCal format" from your Google Calendar settings.</p>
                                     </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Stock Market API Key (Finnhub.io)</label>
+                                        <input type="text" id="conf-finnhub-key" class="w-full p-2 border rounded" placeholder="Enter Finnhub API Key for real-time stocks">
+                                        <p class="text-xs text-gray-500 mt-1">Get a free key at <a href="https://finnhub.io/register" target="_blank" class="text-blue-600 hover:underline">finnhub.io</a>. Leave empty for simulated data.</p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -812,15 +817,58 @@
 
         // --- Live News Fetcher (Business/Edu/Navajo/Stocks) ---
         async function fetchLiveNews() {
-            // 1. Get Market Indices (Simulated with slight randomization for demo vibe)
-            // Note: Real-time numeric data requires a paid API key (e.g., AlphaVantage), so we simulate the "Live" look here.
-            const randomChange = () => (Math.random() * 1.2).toFixed(2);
-            const marketData = [
-                { title: `S&P 500: 5,234.18 ▲ +${randomChange()}%`, source: 'Market Index' },
-                { title: `DOW JONES: 39,120.50 ▲ +${randomChange()}%`, source: 'Market Index' },
-                { title: `NASDAQ: 16,300.95 ▼ -${randomChange()}%`, source: 'Market Index' }
-            ];
+            // 1. Get Market Indices, Stocks, Crypto (Real-time)
+            // Use provided key as default fallback
+            const apiKey = appData.settings?.finnhubApiKey || "d5t4u39r01qt62nh9is0d5t4u39r01qt62nh9isg";
+            let marketData = [];
 
+            if (apiKey) {
+                // Real Data Fetch
+                try {
+                    // Indices
+                    const indices = [
+                        { sym: 'SPY', name: 'S&P 500', type: 'Market Index' },
+                        { sym: 'DIA', name: 'DOW', type: 'Market Index' },
+                        { sym: 'QQQ', name: 'NASDAQ', type: 'Market Index' }
+                    ];
+                    
+                    // Top 5 US Stocks
+                    const stocks = [
+                        { sym: 'AAPL', name: 'Apple', type: 'Stock' },
+                        { sym: 'MSFT', name: 'Microsoft', type: 'Stock' },
+                        { sym: 'NVDA', name: 'Nvidia', type: 'Stock' },
+                        { sym: 'GOOGL', name: 'Google', type: 'Stock' },
+                        { sym: 'AMZN', name: 'Amazon', type: 'Stock' }
+                    ];
+
+                    // Top 5 Crypto (Finnhub usually uses BINANCE: for crypto)
+                    const crypto = [
+                        { sym: 'BINANCE:BTCUSDT', name: 'BTC', type: 'Crypto' },
+                        { sym: 'BINANCE:ETHUSDT', name: 'ETH', type: 'Crypto' },
+                        { sym: 'BINANCE:SOLUSDT', name: 'SOL', type: 'Crypto' },
+                        { sym: 'BINANCE:BNBUSDT', name: 'BNB', type: 'Crypto' },
+                        { sym: 'BINANCE:XRPUSDT', name: 'XRP', type: 'Crypto' }
+                    ];
+
+                    const allSymbols = [...indices, ...stocks, ...crypto];
+                    
+                    for (const s of allSymbols) {
+                        const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${s.sym}&token=${apiKey}`);
+                        const d = await res.json();
+                        // c = current price, dp = percent change
+                        if (d.c) {
+                            const change = d.dp >= 0 ? `▲ +${d.dp.toFixed(2)}%` : `▼ ${d.dp.toFixed(2)}%`;
+                            marketData.push({ 
+                                title: `${s.name}: ${d.c.toFixed(2)} ${change}`, 
+                                source: s.type 
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.error("Stock API Error", e);
+                }
+            }
+            
             // 2. Fetch RSS Feeds
             // Using rss2json public API to fetch standard feeds
             const feeds = [
@@ -877,15 +925,20 @@
                 if (item.source === 'Stock Market') { iconColor = 'text-emerald-400'; icon = 'fa-chart-line'; } 
                 if (item.source === 'Education') { iconColor = 'text-yellow-200'; icon = 'fa-graduation-cap'; }
                 
-                // Special styling for Market Indices
-                if (item.source === 'Market Index') {
-                    const isUp = item.title.includes('▲');
-                    iconColor = isUp ? 'text-green-500' : 'text-red-500';
-                    icon = isUp ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
+                // Market Data Styling (Indices, Stocks, Crypto)
+                if (['Market Index', 'Stock', 'Crypto'].includes(item.source)) {
+                    const isUp = item.title.includes('▲') || item.title.includes('+');
+                    const trendColor = isUp ? 'text-green-400' : 'text-red-400'; 
+                    
+                    if (item.source === 'Market Index') icon = 'fa-chart-pie';
+                    if (item.source === 'Stock') icon = 'fa-building';
+                    if (item.source === 'Crypto') icon = 'fa-coins'; 
+                    
                     return `
-                        <span class="inline-flex items-center mx-12">
-                            <i class="fas ${icon} ${iconColor} mr-3 text-sm"></i>
-                            <span class="font-mono font-bold text-lg tracking-wide ${iconColor} border border-gray-700 px-3 py-1 rounded bg-gray-800/80">${item.title}</span>
+                        <span class="inline-flex items-center mx-8">
+                            <i class="fas ${icon} text-gray-400 mr-2 text-sm"></i>
+                            <span class="font-mono font-bold text-lg tracking-tight text-white mr-2">${item.title.split(':')[0]}:</span>
+                            <span class="font-mono font-bold text-lg ${trendColor}">${item.title.split(':')[1]}</span>
                         </span>
                     `;
                 }
@@ -1000,6 +1053,7 @@
                     appData.settingsId = data[0].id;
                     updateUIConfig(data[0]);
                     startWeatherAutoUpdate(data[0].location);
+                    fetchLiveNews(); // Re-fetch news when config (API Key) changes
                 } else if(currentUser) {
                     // Default settings
                     const defaults = { schoolName: "Navajo Pine HS", subtitle: "School of Technology", location: "Navajo, NM" };
@@ -1039,6 +1093,7 @@
             if(confSub2) confSub2.innerHTML = settings.subtitle2 || "";
             els.confLocation.value = settings.location || "";
             els.confCalendar.value = settings.googleCalendar || "";
+            document.getElementById('conf-finnhub-key').value = settings.finnhubApiKey || "";
             const pinField = document.getElementById('conf-admin-pin');
             if (pinField) pinField.value = settings.adminPin || "1234";
             
@@ -1274,6 +1329,7 @@
                     subtitle2: document.getElementById('editor-conf-subtitle-2').innerHTML,
                     location: els.confLocation.value,
                     googleCalendar: els.confCalendar.value,
+                    finnhubApiKey: document.getElementById('conf-finnhub-key').value,
                     logo: logoBase64,
                     headerBackground: headerBgBase64,
                     adminPin: document.getElementById('conf-admin-pin').value || "1234"
